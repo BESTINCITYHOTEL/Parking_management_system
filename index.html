@@ -165,12 +165,14 @@
             }
 
            document.getElementById("submitBtn").onclick = () => {
-    const room = roomInput.value;
-    const car = carInput.value;
-    const newData = { room, car };
+    const room = roomInput.value.trim();
+    const car = carInput.value.trim();
+    const newData = { room: room || "", car: car || "" };
 
     // 🚨 중복 방지: 최근 입력값과 비교
-    if (JSON.stringify(newData) === JSON.stringify(parkingRecords[slot])) {
+    const existingData = parkingRecords[slot] || { room: "", car: "" };
+    
+    if (JSON.stringify(newData) === JSON.stringify(existingData)) {
         alert("⚠️ 동일한 데이터가 이미 입력되었습니다.");
         return; // 중복된 경우 저장하지 않음
     }
@@ -208,8 +210,8 @@
             roomToCars[roomNumber].push(carNumber);
         }
 
-        let existingRoom = Object.values(parkingRecords).find(d => d.room === roomNumber);
-        let existingCar = Object.values(parkingRecords).find(d => d.car === carNumber);
+        let existingRoom = Object.values(parkingRecords).some(d => d.room === roomNumber);
+        let existingCar = Object.values(parkingRecords).some(d => d.car === carNumber);
 
         if (existingRoom) alerts.push(`⚠️ 중복된 입실 호수: ${roomNumber}`);
         if (existingCar) alerts.push(`⚠️ 중복된 차량 번호: ${carNumber}`);
@@ -282,8 +284,9 @@ document.getElementById("pasteBtn").onclick = async () => {
     try {
         const text = await navigator.clipboard.readText();
         const pastedData = text.split("\n").map(line => {
-            const parts = line.split("\t"); // 탭으로 구분된 데이터 처리
-            return { roomNumber: parts[0]?.trim(), carNumber: parts[1]?.trim() };
+    const parts = line.split("\t"); // 탭으로 구분된 데이터 처리
+    return { roomNumber: parts[0]?.trim(), carNumber: parts[1]?.trim() };
+}).filter(entry => entry.roomNumber || entry.carNumber); // 🚨 빈 데이터 제거
         });
 
         validateAndInsertData(pastedData);
@@ -327,11 +330,11 @@ document.getElementById("searchInput").addEventListener("input", function() {
     let found = false; // 검색 결과 여부 확인
 
     Object.entries(parkingRecords).forEach(([slot, info]) => {
-        if (info.room.includes(searchValue) || info.car.includes(searchValue)) {
-            const spot = document.getElementById(`spot-${slot}`);
-            spot.style.outline = "4px solid yellow";
-            spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)"; // 배경을 연한 노란색으로 변경
-            found = true;
+        if ((info.room?.includes(searchValue) || info.car?.includes(searchValue))) {
+    const spot = document.getElementById(`spot-${slot}`);
+    spot.style.outline = "4px solid yellow";
+    spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)"; // 배경을 연한 노란색으로 변경
+    found = true;
         }
     });
 
