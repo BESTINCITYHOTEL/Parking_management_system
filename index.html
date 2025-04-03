@@ -198,35 +198,32 @@
         }
         function validateAndInsertData(pastedData) {
     let alerts = [];
-    let roomToCars = {}; // { "호수": ["차량1", "차량2"] }
+    let roomToCars = {}; 
 
     pastedData.forEach(entry => {
         let { roomNumber, carNumber } = entry;
 
-        if (!roomNumber && !carNumber) return; // 빈 데이터 무시
+        if (!roomNumber && !carNumber) return;
 
         if (roomNumber) {
             if (!roomToCars[roomNumber]) roomToCars[roomNumber] = [];
             roomToCars[roomNumber].push(carNumber);
         }
 
-        let existingRoom = Object.values(parkingRecords).some(d => d.room === roomNumber);
-        let existingCar = Object.values(parkingRecords).some(d => d.car === carNumber);
+        let existingEntry = Object.values(parkingRecords).find(d => d.room === roomNumber && d.car === carNumber);
+        if (existingEntry) {
+            alerts.push(`⚠️ 이미 등록된 데이터: ${roomNumber}호 - 차량 ${carNumber}`);
+            return;
+        }
 
-        if (existingRoom) alerts.push(`⚠️ 중복된 입실 호수: ${roomNumber}`);
-        if (existingCar) alerts.push(`⚠️ 중복된 차량 번호: ${carNumber}`);
-        if (carNumber && !roomNumber) alerts.push(`🚗 미입실 차량: ${carNumber}`);
-
-        if (!existingRoom && !existingCar) {
-            let emptySpot = Object.keys(parkingRecords).find(spot => !parkingRecords[spot]);
-            if (emptySpot) {
-                parkingRecords[emptySpot] = { room: roomNumber, car: carNumber };
-                const spotElement = document.getElementById(`spot-${emptySpot}`);
-                spotElement.classList.add("occupied");
-                spotElement.innerText = `${roomNumber || "-"}\n${carNumber || "-"}`;
-            } else {
-                alerts.push("⚠️ 빈 주차 공간이 없습니다.");
-            }
+        let emptySpot = Object.keys(parkingRecords).find(spot => !parkingRecords[spot]);
+        if (emptySpot) {
+            parkingRecords[emptySpot] = { room: roomNumber, car: carNumber };
+            const spotElement = document.getElementById(`spot-${emptySpot}`);
+            spotElement.classList.add("occupied");
+            spotElement.innerText = `${roomNumber || "-"}\n${carNumber || "-"}`;
+        } else {
+            alerts.push("⚠️ 빈 주차 공간이 없습니다.");
         }
     });
 
@@ -240,7 +237,6 @@
 
     updateStatus();
 }
-
 
         function toggleParking(slot) {
             const spotElement = document.getElementById(`spot-${slot}`);
@@ -283,15 +279,24 @@
 document.getElementById("pasteBtn").onclick = async () => {
     try {
         const text = await navigator.clipboard.readText();
+        if (!text.trim()) {
+            alert("📋 붙여넣을 데이터가 없습니다.");
+            return;
+        }
+
         const pastedData = text.split("\n").map(line => {
-    const parts = line.split("\t"); // 탭으로 구분된 데이터 처리
-    return { roomNumber: parts[0]?.trim(), carNumber: parts[1]?.trim() };
-}).filter(entry => entry.roomNumber || entry.carNumber); // 🚨 빈 데이터 제거
-        });
+            const parts = line.split("\t");
+            return { roomNumber: parts[0]?.trim(), carNumber: parts[1]?.trim() };
+        }).filter(entry => entry.roomNumber || entry.carNumber); // 🚨 빈 데이터 제거
+
+        if (pastedData.length === 0) {
+            alert("📋 붙여넣기할 유효한 데이터가 없습니다.");
+            return;
+        }
 
         validateAndInsertData(pastedData);
     } catch (err) {
-        alert("클립보드 데이터를 가져올 수 없습니다.");
+        alert("🚨 클립보드 데이터를 가져오는 데 실패했습니다: " + err.message);
     }
 };
 
@@ -319,7 +324,6 @@ document.getElementById("searchInput").addEventListener("input", function() {
     const searchValue = this.value.trim().toLowerCase();
     const spots = document.querySelectorAll(".spot");
 
-    // 모든 주차칸의 하이라이트 제거
     spots.forEach(spot => {
         spot.style.outline = "none";
         spot.style.backgroundColor = ""; 
@@ -330,16 +334,20 @@ document.getElementById("searchInput").addEventListener("input", function() {
     let found = false; // 검색 결과 여부 확인
 
     Object.entries(parkingRecords).forEach(([slot, info]) => {
-        if ((info.room?.includes(searchValue) || info.car?.includes(searchValue))) {
-    const spot = document.getElementById(`spot-${slot}`);
-    spot.style.outline = "4px solid yellow";
-    spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)"; // 배경을 연한 노란색으로 변경
-    found = true;
+        if (info.room?.includes(searchValue) || info.car?.includes(searchValue)) {
+            const spot = document.getElementById(`spot-${slot}`);
+            spot.style.outline = "4px solid yellow";
+            spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+            found = true;
         }
     });
 
-    if (!found) {
-        alert("검색된 차량이 없습니다."); // 검색 결과가 없을 경우 알림
+    // 🔴 검색어가 입력될 때마다 알림이 여러 번 뜨는 문제 해결
+    if (!found && searchValue.length > 1) {
+        setTimeout(() => {
+            if (!document.getElementById("searchInput").value.trim()) return;
+            alert("검색된 차량이 없습니다.");
+        }, 500); // 0.5초 후 확인
     }
 });
 
