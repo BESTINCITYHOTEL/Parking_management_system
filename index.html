@@ -117,6 +117,8 @@
 
     <!-- 검색 아이콘 -->
     <div class="search-container">
+        <!-- 검색 아이콘 왼쪽에 붙여넣기 버튼 추가 -->
+        <button class="search-button" id="pasteBtn">📋</button>
         <button class="search-button" id="searchIcon">🔍</button>
         <input type="text" class="search-input" id="searchInput" placeholder="주차칸 검색" inputmode="numeric">
     </div>
@@ -162,16 +164,25 @@
                 carInput.value = "";
             }
 
-            document.getElementById("submitBtn").onclick = () => {
-                const room = roomInput.value;
-                const car = carInput.value;
-                parkingRecords[slot] = { room, car };
-                const spotElement = document.getElementById(`spot-${slot}`);
-                spotElement.classList.add("occupied");
-                spotElement.innerText = `${room || "-"}\n${car || "-"}`;
-                updateStatus();
-                modal.style.display = "none";
-            };
+           document.getElementById("submitBtn").onclick = () => {
+    const room = roomInput.value;
+    const car = carInput.value;
+    const newData = { room, car };
+
+    // 🚨 중복 방지: 최근 입력값과 비교
+    if (JSON.stringify(newData) === JSON.stringify(parkingRecords[slot])) {
+        alert("⚠️ 동일한 데이터가 이미 입력되었습니다.");
+        return; // 중복된 경우 저장하지 않음
+    }
+
+    parkingRecords[slot] = newData; // 새 데이터 저장
+    const spotElement = document.getElementById(`spot-${slot}`);
+    spotElement.classList.add("occupied");
+    spotElement.innerText = `${room || "-"}\n${car || "-"}`;
+
+    updateStatus(); // 상태 업데이트
+    modal.style.display = "none"; // 모달 닫기
+};
 
             document.getElementById("cancelBtn").onclick = () => {
                 modal.style.display = "none";
@@ -183,6 +194,51 @@
             spotElement.classList.remove("occupied");
             spotElement.innerText = "";
         }
+        function validateAndInsertData(pastedData) {
+    let alerts = [];
+    let roomToCars = {}; // { "호수": ["차량1", "차량2"] }
+
+    pastedData.forEach(entry => {
+        let { roomNumber, carNumber } = entry;
+
+        if (!roomNumber && !carNumber) return; // 빈 데이터 무시
+
+        if (roomNumber) {
+            if (!roomToCars[roomNumber]) roomToCars[roomNumber] = [];
+            roomToCars[roomNumber].push(carNumber);
+        }
+
+        let existingRoom = Object.values(parkingRecords).find(d => d.room === roomNumber);
+        let existingCar = Object.values(parkingRecords).find(d => d.car === carNumber);
+
+        if (existingRoom) alerts.push(`⚠️ 중복된 입실 호수: ${roomNumber}`);
+        if (existingCar) alerts.push(`⚠️ 중복된 차량 번호: ${carNumber}`);
+        if (carNumber && !roomNumber) alerts.push(`🚗 미입실 차량: ${carNumber}`);
+
+        if (!existingRoom && !existingCar) {
+            let emptySpot = Object.keys(parkingRecords).find(spot => !parkingRecords[spot]);
+            if (emptySpot) {
+                parkingRecords[emptySpot] = { room: roomNumber, car: carNumber };
+                const spotElement = document.getElementById(`spot-${emptySpot}`);
+                spotElement.classList.add("occupied");
+                spotElement.innerText = `${roomNumber || "-"}\n${carNumber || "-"}`;
+            } else {
+                alerts.push("⚠️ 빈 주차 공간이 없습니다.");
+            }
+        }
+    });
+
+    for (let room in roomToCars) {
+        if (roomToCars[room].length > 1) {
+            alerts.push(`⚠️ 방 ${room}에 차량 ${roomToCars[room].join(", ")} 개 있음 (수동 입력 필요)`);
+        }
+    }
+
+    if (alerts.length > 0) alert(alerts.join("\n"));
+
+    updateStatus();
+}
+
 
         function toggleParking(slot) {
             const spotElement = document.getElementById(`spot-${slot}`);
@@ -221,6 +277,20 @@
             spot.id = `spot-${i}`;
             spot.onclick = () => toggleParking(i);
         }
+        
+document.getElementById("pasteBtn").onclick = async () => {
+    try {
+        const text = await navigator.clipboard.readText();
+        const pastedData = text.split("\n").map(line => {
+            const parts = line.split("\t"); // 탭으로 구분된 데이터 처리
+            return { roomNumber: parts[0]?.trim(), carNumber: parts[1]?.trim() };
+        });
+
+        validateAndInsertData(pastedData);
+    } catch (err) {
+        alert("클립보드 데이터를 가져올 수 없습니다.");
+    }
+};
 
         // 특정 번호 아래 줄 추가
         if (linesBottom.includes(i)) {
