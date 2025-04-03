@@ -169,21 +169,21 @@
     const car = carInput.value.trim();
     const newData = { room: room || "", car: car || "" };
 
-    // 🚨 중복 방지: 최근 입력값과 비교
     const existingData = parkingRecords[slot] || { room: "", car: "" };
-    
-    if (JSON.stringify(newData) === JSON.stringify(existingData)) {
+
+    // 🚨 중복 방지 개선: 공백 입력도 동일한 데이터로 취급
+    if (newData.room === existingData.room && newData.car === existingData.car) {
         alert("⚠️ 동일한 데이터가 이미 입력되었습니다.");
-        return; // 중복된 경우 저장하지 않음
+        return;
     }
 
-    parkingRecords[slot] = newData; // 새 데이터 저장
+    parkingRecords[slot] = newData;
     const spotElement = document.getElementById(`spot-${slot}`);
     spotElement.classList.add("occupied");
     spotElement.innerText = `${room || "-"}\n${car || "-"}`;
 
-    updateStatus(); // 상태 업데이트
-    modal.style.display = "none"; // 모달 닫기
+    updateStatus();
+    modal.style.display = "none";
 };
 
             document.getElementById("cancelBtn").onclick = () => {
@@ -239,26 +239,23 @@
 }
 
         function toggleParking(slot) {
-            const spotElement = document.getElementById(`spot-${slot}`);
+    const spotElement = document.getElementById(`spot-${slot}`);
 
-            if (parkingRecords[slot]) {
-                // 🚗 주차된 자리 → 출차 or 수정 선택
-                const action = confirm("출차하시겠습니까? '취소'를 누르면 정보를 수정할 수 있습니다.");
-                if (action) {
-                    // ✅ 출차
-                    delete parkingRecords[slot];
-                    updateSpot(slot); // 주차 자리 업데이트
-                    updateStatus(); // 출차 후 상태 업데이트
-                } else {
-                    // ✏ 정보 수정
-                    showModal(slot);
-                }
-            } else {
-                // 🚗 빈 자리 → 새로 주차
-                showModal(slot);
-            }
+    if (parkingRecords[slot]) {
+        // 🚗 출차 or 수정 선택
+        if (confirm("출차하시겠습니까? '취소'를 누르면 정보를 수정할 수 있습니다.")) {
+            delete parkingRecords[slot];
+            updateSpot(slot);
+            updateStatus();
+        } else {
+            // ✏ 정보 수정: 모달 유지
+            showModal(slot);
         }
-
+    } else {
+        showModal(slot);
+    }
+}
+        
         function createParkingLot() {
     const lot = document.getElementById("parkingLot");
 
@@ -324,14 +321,18 @@ document.getElementById("searchInput").addEventListener("input", function() {
     const searchValue = this.value.trim().toLowerCase();
     const spots = document.querySelectorAll(".spot");
 
+    // 기존 검색 스타일 제거
     spots.forEach(spot => {
         spot.style.outline = "none";
-        spot.style.backgroundColor = ""; 
+        spot.style.backgroundColor = "";
     });
 
-    if (!searchValue) return; // 검색어가 없으면 종료
+    const searchMessage = document.getElementById("searchMessage");
+    if (searchMessage) searchMessage.remove(); // 기존 메시지 삭제
 
-    let found = false; // 검색 결과 여부 확인
+    if (!searchValue) return;
+
+    let found = false;
 
     Object.entries(parkingRecords).forEach(([slot, info]) => {
         if (info.room?.includes(searchValue) || info.car?.includes(searchValue)) {
@@ -342,12 +343,13 @@ document.getElementById("searchInput").addEventListener("input", function() {
         }
     });
 
-    // 🔴 검색어가 입력될 때마다 알림이 여러 번 뜨는 문제 해결
-    if (!found && searchValue.length > 1) {
-        setTimeout(() => {
-            if (!document.getElementById("searchInput").value.trim()) return;
-            alert("검색된 차량이 없습니다.");
-        }, 500); // 0.5초 후 확인
+    if (!found) {
+        const message = document.createElement("p");
+        message.id = "searchMessage";
+        message.innerText = "❌ 검색된 차량이 없습니다.";
+        message.style.color = "red";
+        message.style.fontWeight = "bold";
+        document.body.appendChild(message); // 화면에 메시지 추가
     }
 });
 
