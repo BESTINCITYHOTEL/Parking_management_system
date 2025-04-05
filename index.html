@@ -109,6 +109,10 @@
             border: none;
             color: #333;
         }
+        .modal button.remove {
+            background-color: orange;
+            margin-top: 5px;
+}
     </style>
 </head>
 <body>
@@ -124,13 +128,14 @@
     <div class="parking-container" id="parkingLot"></div>
     
     <!-- 모달 창 -->
-    <div id="modal" class="modal">
-        <h3>주차 정보 수정</h3>
-        <input type="text" id="room" placeholder="입실 호수" inputmode="numeric">
-        <input type="text" id="car" placeholder="차량 뒷번호" inputmode="numeric">
-        <button id="submitBtn">저장</button>
-        <button class="cancel" id="cancelBtn">취소</button>
-    </div>
+<div id="modal" class="modal">
+    <h3>주차 정보 수정</h3>
+    <input type="text" id="room" placeholder="입실 호수" inputmode="numeric">
+    <input type="text" id="car" placeholder="차량 뒷번호" inputmode="numeric">
+    <button id="submitBtn">저장</button>
+    <button class="remove" id="removeBtn">출차</button>
+    <button class="cancel" id="cancelBtn">취소</button>
+</div>
 
     <script>
         const TOTAL_SPOTS = 39;
@@ -148,36 +153,48 @@
         }
 
         function showModal(slot) {
-            const modal = document.getElementById("modal");
-            modal.style.display = "block";
+    const modal = document.getElementById("modal");
+    modal.style.display = "block";
+    window.currentSlot = slot;
 
-            const roomInput = document.getElementById("room");
-            const carInput = document.getElementById("car");
+    const roomInput = document.getElementById("room");
+    const carInput = document.getElementById("car");
 
-            if (parkingRecords[slot]) {
-                roomInput.value = parkingRecords[slot].room || "";
-                carInput.value = parkingRecords[slot].car || "";
-            } else {
-                roomInput.value = "";
-                carInput.value = "";
-            }
+    if (parkingRecords[slot]) {
+        roomInput.value = parkingRecords[slot].room || "";
+        carInput.value = parkingRecords[slot].car || "";
+    } else {
+        roomInput.value = "";
+        carInput.value = "";
+    }
 
-            document.getElementById("submitBtn").onclick = () => {
-                const room = roomInput.value;
-                const car = carInput.value;
-                parkingRecords[slot] = { room, car };
-                const spotElement = document.getElementById(`spot-${slot}`);
-                spotElement.classList.add("occupied");
-                spotElement.innerText = `${room || "-"}\n${car || "-"}`;
-                updateStatus();
-                modal.style.display = "none";
-            };
+    document.getElementById("submitBtn").onclick = () => {
+        const room = roomInput.value;
+        const car = carInput.value;
+        parkingRecords[slot] = { room, car };
+        const spotElement = document.getElementById(`spot-${slot}`);
+        spotElement.classList.add("occupied");
+        spotElement.innerText = `${room || "-"}\n${car || "-"}`;
+        updateStatus();
+        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        modal.style.display = "none";
+    };
 
-            document.getElementById("cancelBtn").onclick = () => {
-                modal.style.display = "none";
-            };
-        }
+    document.getElementById("removeBtn").onclick = () => {
+        delete parkingRecords[slot];
+        const spotElement = document.getElementById(`spot-${slot}`);
+        spotElement.classList.remove("occupied");
+        spotElement.innerText = "";
+        updateStatus();
+        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        modal.style.display = "none";
+    };
 
+    document.getElementById("cancelBtn").onclick = () => {
+        modal.style.display = "none";
+    };
+}
+        
         function updateSpot(slot) {
             const spotElement = document.getElementById(`spot-${slot}`);
             spotElement.classList.remove("occupied");
@@ -260,14 +277,15 @@ document.getElementById("searchInput").addEventListener("keypress", function(e) 
         let found = false;
 
         Object.entries(parkingRecords).forEach(([slot, info]) => {
-            if (info.room.includes(searchValue) || info.car.includes(searchValue)) {
-                const spot = document.getElementById(`spot-${slot}`);
-                spot.style.outline = "4px solid yellow";
-                spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
-                found = true;
-            }
-        });
-
+    if (info.room.includes(searchValue) || info.car.includes(searchValue)) {
+        const spot = document.getElementById(`spot-${slot}`);
+        spot.style.outline = "4px solid yellow";
+        spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+        spot.scrollIntoView({ behavior: "smooth", block: "center" }); // 🔥 자동 스크롤
+        found = true;
+    }
+});
+        
         if (!found) {
             alert("검색된 차량이 없습니다.");
         }
