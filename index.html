@@ -217,49 +217,92 @@
             }
         }
 
-        // 검색 기능 관련
+        // 검색 기능
         const searchInput = document.getElementById("searchInput");
+        const searchStatus = document.getElementById("searchStatus");
+        let currentSearchResults = [];
+        let currentSearchIndex = 0;
 
         function clearHighlights() {
             document.querySelectorAll(".spot").forEach(spot => {
                 spot.style.outline = "none";
                 spot.style.backgroundColor = "";
             });
+            currentSearchResults = [];
+            currentSearchIndex = 0;
+            searchStatus.innerText = "";
         }
 
-        searchInput.addEventListener("input", function () {
-    highlightSearchResults(this.value.trim());
-});
-        
-        searchInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-        if (currentSearchResults.length === 0) return;
-        currentSearchIndex = (currentSearchIndex + 1) % currentSearchResults.length;
-        scrollToCurrentResult();
-        updateSearchStatus();
-    }
-});
-        
-        document.getElementById("searchIcon").onclick = () => {
-    const isOpen = searchInput.style.display === "block";
-    if (isOpen) {
-        searchInput.style.display = "none";
-        searchInput.value = "";
-        clearHighlights();
-    } else {
-        searchInput.style.display = "block";
-        searchInput.focus();
-    }
-};
+        function highlightSearchResults(query) {
+            clearHighlights();
+            if (!query) return;
 
-document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-        searchInput.style.display = "none";
-        searchInput.value = "";
-        clearHighlights();
-    }
-});
-        
+            query = query.toLowerCase();
+
+            Object.entries(parkingRecords).forEach(([slot, info]) => {
+                if (info.room.includes(query) || info.car.includes(query)) {
+                    const spot = document.getElementById(`spot-${slot}`);
+                    currentSearchResults.push(spot);
+                    spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+                }
+            });
+
+            if (currentSearchResults.length > 0) {
+                currentSearchIndex = 0;
+                scrollToCurrentResult();
+            }
+            updateSearchStatus();
+        }
+
+        function scrollToCurrentResult() {
+            if (currentSearchResults.length === 0) return;
+            currentSearchResults.forEach(s => s.style.outline = "4px solid yellow");
+            const current = currentSearchResults[currentSearchIndex];
+            current.style.outline = "4px solid orange";
+            current.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        function updateSearchStatus() {
+            if (currentSearchResults.length === 0) {
+                searchStatus.innerText = "";
+            } else {
+                searchStatus.innerText = `${currentSearchIndex + 1} / ${currentSearchResults.length}`;
+            }
+        }
+
+        searchInput.addEventListener("input", () => {
+            highlightSearchResults(searchInput.value.trim());
+        });
+
+        searchInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                if (currentSearchResults.length === 0) return;
+                currentSearchIndex = (currentSearchIndex + 1) % currentSearchResults.length;
+                scrollToCurrentResult();
+                updateSearchStatus();
+            }
+        });
+
+        document.getElementById("searchIcon").onclick = () => {
+            const isOpen = searchInput.style.display === "block";
+            if (isOpen) {
+                searchInput.style.display = "none";
+                searchInput.value = "";
+                clearHighlights();
+            } else {
+                searchInput.style.display = "block";
+                searchInput.focus();
+            }
+        };
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                searchInput.style.display = "none";
+                searchInput.value = "";
+                clearHighlights();
+            }
+        });
+
         window.onclick = function (event) {
             const modal = document.getElementById("modal");
             if (event.target === modal) modal.style.display = "none";
@@ -267,57 +310,18 @@ document.addEventListener("keydown", function (e) {
 
         createParkingLot();
         updateStatus();
-        let currentSearchResults = [];
-let currentSearchIndex = 0;
-
-function clearHighlights() {
-    document.querySelectorAll(".spot").forEach(spot => {
-        spot.style.outline = "none";
-        spot.style.backgroundColor = "";
-    });
-    document.getElementById("searchStatus").innerText = "";
-    currentSearchResults = [];
-    currentSearchIndex = 0;
-}
-
-function highlightSearchResults(query) {
-    clearHighlights();
-    if (!query) return;
-
-    query = query.toLowerCase();
-    currentSearchResults = [];
-
-    Object.entries(parkingRecords).forEach(([slot, info]) => {
-        if (info.room.includes(query) || info.car.includes(query)) {
-            const spot = document.getElementById(`spot-${slot}`);
-            currentSearchResults.push(spot);
-            spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+        const saved = localStorage.getItem("parkingRecords");
+        if (saved) {
+            parkingRecords = JSON.parse(saved);
+            Object.entries(parkingRecords).forEach(([slot, { room, car }]) => {
+                const spot = document.getElementById(`spot-${slot}`);
+                if (spot) {
+                    spot.classList.add("occupied");
+                    spot.innerText = `${room || "-"}\n${car || "-"}`;
+                }
+            });
+            updateStatus();
         }
-    });
-
-    if (currentSearchResults.length > 0) {
-        currentSearchIndex = 0;
-        scrollToCurrentResult();
-    }
-
-    updateSearchStatus();
-}
-
-function scrollToCurrentResult() {
-    if (currentSearchResults.length === 0) return;
-    currentSearchResults.forEach(s => s.style.outline = "4px solid yellow"); // 전체 표시
-    const current = currentSearchResults[currentSearchIndex];
-    current.style.outline = "4px solid orange"; // 현재 포커스 강조
-}
-
-function updateSearchStatus() {
-    const status = document.getElementById("searchStatus");
-    if (currentSearchResults.length === 0) {
-        status.innerText = "";
-    } else {
-        status.innerText = `${currentSearchIndex + 1} / ${currentSearchResults.length}`;
-    }
-}
     </script>
 </body>
 </html>
