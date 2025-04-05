@@ -236,10 +236,12 @@
     }
 }
 
-        // 검색 기능
 document.getElementById("searchIcon").onclick = () => {
     const searchInput = document.getElementById("searchInput");
     searchInput.style.display = searchInput.style.display === "block" ? "none" : "block";
+    if (searchInput.style.display === "block") {
+        searchInput.focus();
+    }
 };
 
 document.getElementById("searchInput").addEventListener("keypress", function(e) {
