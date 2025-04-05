@@ -104,15 +104,15 @@
             background-color: green;
         }
         /* 검색창 스타일 */
-        .search-container {
+       .search-container {
             position: absolute;
             top: 20px;
             right: 20px;
             z-index: 999;
-            display: flex; /* 아이콘과 입력창을 나란히 정렬 */
+            display: flex;
+            flex-direction: row-reverse; /* 🔥 핵심: 아이콘이 오른쪽으로 가고, 검색창이 왼쪽 */
             align-items: center;
         }
-
         .search-input {
             display: none;
             padding: 10px;
@@ -120,10 +120,8 @@
             border-radius: 5px;
             border: 1px solid #ccc;
             width: 200px;
-            margin-left: 10px; /* 아이콘과 약간의 간격 */
-            transition: all 0.3s ease; /* 부드러운 전환 */
+            margin-right: 10px; /* 아이콘과 검색창 사이 간격 (이제 margin-right로) */
         }
-
         .search-button {
             cursor: pointer;
             font-size: 20px;
