@@ -121,33 +121,22 @@
     }
 
     .search-container {
-      position: absolute;
-      top: 35px;
-      right: 10px;
-      z-index: 999;
-      display: flex;
-      flex-direction: row-reverse;
-      align-items: center;
-      gap: 8px;
-    }
+  position: absolute;
+  top: 10px; /* 원하는 위치로 조정 */
+  right: 10px; /* 원하는 위치로 조정 */
+  display: flex;
+  align-items: center;
+}
 
-    .search-input {
-      display: none;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 180px;
-    }
+.search-input {
+  display: none;
+  margin-right: 10px;
+}
 
-    .search-button {
-      cursor: pointer;
-      font-size: 20px;
-      background: none;
-      border: none;
-      color: #333;
-    }
-
+.search-button {
+  cursor: pointer;
+}
+    
     @media (max-width: 600px) {
       .parking-container {
         height: 480px;
@@ -240,12 +229,11 @@
       const roomInput = document.getElementById("room");
       const carInput = document.getElementById("car");
 
-      // 포커스 시 키보드 가리는 문제 방지
-      [roomInput, carInput].forEach(input => {
-        input.addEventListener('focus', () => {
-          input.scrollIntoView({ behavior: "smooth", block: "center" });
-        });
-      });
+[roomInput, carInput].forEach(input => {
+  input.addEventListener('focus', () => {
+    input.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+});
 
       if (parkingRecords[slot]) {
         roomInput.value = parkingRecords[slot].room || "";
@@ -324,11 +312,15 @@
       }
     }
 
-    document.getElementById("searchIcon").onclick = () => {
-      const searchInput = document.getElementById("searchInput");
-      searchInput.style.display = searchInput.style.display === "block" ? "none" : "block";
-      if (searchInput.style.display === "block") searchInput.focus();
-    };
+   document.getElementById("searchIcon").onclick = () => {
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput.style.display === "none" || searchInput.style.display === "") {
+    searchInput.style.display = "block";
+    searchInput.focus();
+  } else {
+    searchInput.style.display = "none";
+  }
+};
 
     document.getElementById("searchInput").addEventListener("keypress", function (e) {
       if (e.key === "Enter") {
