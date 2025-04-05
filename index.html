@@ -6,7 +6,6 @@
     <title>주차 관리 시스템</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
-
         .parking-container {
             position: relative;
             width: 100%;
@@ -20,11 +19,10 @@
             background: url('도면이미지.png') no-repeat center center;
             background-size: cover;
         }
-
         .spot {
             width: 100%;
             height: 100%;
-            aspect-ratio: 2 / 1;
+            aspect-ratio: 2 / 1; /* 주차자리 비율을 2:1로 고정 */
             background-color: green;
             color: white;
             text-align: center;
@@ -35,21 +33,26 @@
             font-weight: bold;
             border-radius: 10px;
             cursor: pointer;
-            line-height: 1.2;
+            line-height: 1.2; /* 세로 중앙 배치 */
             padding: 5px;
-            text-shadow: 1px 1px 3px black;
-            box-sizing: border-box;
-            white-space: nowrap;
+            text-shadow: 1px 1px 3px black; /* 글씨 가독성 향상 */
+            box-sizing: border-box; /* 크기 변동을 방지하기 위한 설정 */
+            white-space: nowrap; /* 줄 바꿈 방지 */
         }
-
         .occupied { background-color: red; }
         .empty { background: none; pointer-events: none; }
+        
+        /* 줄 스타일 추가 */
+        .border-top { 
+            border-top: 3px solid black; 
+        }
+        .border-bottom { 
+            border-bottom: 3px solid black; 
+        }
 
-        .border-top { border-top: 3px solid black; }
-        .border-bottom { border-bottom: 3px solid black; }
-
+        /* 모달 스타일 */
         .modal {
-            display: none;
+            display: none; /* 기본적으로 숨겨짐 */
             position: fixed;
             top: 50%;
             left: 50%;
@@ -59,10 +62,9 @@
             padding: 30px;
             border-radius: 10px;
             z-index: 1000;
-            width: 66%;
-            max-width: 450px;
+            width: 66%; /* 모달 너비 2/3로 설정 */
+            max-width: 450px; /* 최대 너비 제한 */
         }
-
         .modal input {
             width: 100%;
             padding: 15px;
@@ -78,7 +80,7 @@
             justify-content: space-between;
             gap: 10px;
             margin-top: 10px;
-        }
+            }
 
         .modal-buttons button {
             flex: 1;
@@ -90,28 +92,67 @@
             box-sizing: border-box;
         }
 
-        .modal-buttons .remove { background-color: orange; }
-        .modal-buttons .cancel { background-color: red; }
-        .modal-buttons #submitBtn { background-color: green; }
+        .modal-buttons .remove {
+            background-color: orange;
+        }
+
+        .modal-buttons .cancel {
+            background-color: red;
+        }
+
+        .modal-buttons #submitBtn {
+            background-color: green;
+        }
+        /* 검색창 스타일 */
+        .search-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+        }
+        .search-input {
+            display: none;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 200px;
+        }
+        .search-button {
+            cursor: pointer;
+            font-size: 20px;
+            background: none;
+            border: none;
+            color: #333;
+        }
     </style>
 </head>
 <body>
     <h2>주차 관리 시스템</h2>
     <p id="status">현재 주차된 차량: 0대 / 남은 자리: 39대</p>
 
-    <div class="parking-container" id="parkingLot"></div>
-
-    <!-- 모달 창 -->
-    <div id="modal" class="modal">
-        <h3>주차 정보 수정</h3>
-        <input type="text" id="room" placeholder="입실 호수" inputmode="numeric">
-        <input type="text" id="car" placeholder="차량 뒷번호" inputmode="numeric">
-        <div class="modal-buttons">
-            <button class="remove" id="removeBtn">출차</button>
-            <button id="submitBtn">저장</button>
-            <button class="cancel" id="cancelBtn">취소</button>
-        </div>
+    <!-- 검색 아이콘 -->
+    <div class="search-container">
+        <button class="search-button" id="searchIcon">🔍</button>
+        <input type="text" class="search-input" id="searchInput" placeholder="주차칸 검색" inputmode="numeric">
     </div>
+
+    <div class="parking-container" id="parkingLot"></div>
+    
+<!-- 모달 창 -->
+<div id="modal" class="modal">
+    <h3>주차 정보 수정</h3>
+    <input type="text" id="room" placeholder="입실 호수" inputmode="numeric">
+    <input type="text" id="car" placeholder="차량 뒷번호" inputmode="numeric">
+
+    <!-- 버튼을 div로 감싸고, 순서를 조정 -->
+    <div class="modal-buttons">
+        <button class="remove" id="removeBtn">출차</button>
+        <button id="submitBtn">저장</button>
+        <button class="cancel" id="cancelBtn">취소</button>
+    </div>
+</div>
+
 
     <script>
         const TOTAL_SPOTS = 39;
@@ -129,97 +170,131 @@
         }
 
         function showModal(slot) {
-            const modal = document.getElementById("modal");
-            modal.style.display = "block";
-            window.currentSlot = slot;
+    const modal = document.getElementById("modal");
+    modal.style.display = "block";
+    window.currentSlot = slot;
 
-            const roomInput = document.getElementById("room");
-            const carInput = document.getElementById("car");
+    const roomInput = document.getElementById("room");
+    const carInput = document.getElementById("car");
 
-            if (parkingRecords[slot]) {
-                roomInput.value = parkingRecords[slot].room || "";
-                carInput.value = parkingRecords[slot].car || "";
-            } else {
-                roomInput.value = "";
-                carInput.value = "";
-            }
+    if (parkingRecords[slot]) {
+        roomInput.value = parkingRecords[slot].room || "";
+        carInput.value = parkingRecords[slot].car || "";
+    } else {
+        roomInput.value = "";
+        carInput.value = "";
+    }
 
-            document.getElementById("submitBtn").onclick = () => {
-                const room = roomInput.value;
-                const car = carInput.value;
-                parkingRecords[slot] = { room, car };
-                const spotElement = document.getElementById(`spot-${slot}`);
-                spotElement.classList.add("occupied");
-                spotElement.innerText = `${room || "-"}\n${car || "-"}`;
-                updateStatus();
-                localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
-                modal.style.display = "none";
-            };
+    document.getElementById("submitBtn").onclick = () => {
+        const room = roomInput.value;
+        const car = carInput.value;
+        parkingRecords[slot] = { room, car };
+        const spotElement = document.getElementById(`spot-${slot}`);
+        spotElement.classList.add("occupied");
+        spotElement.innerText = `${room || "-"}\n${car || "-"}`;
+        updateStatus();
+        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        modal.style.display = "none";
+    };
 
-            document.getElementById("removeBtn").onclick = () => {
-                delete parkingRecords[slot];
-                const spotElement = document.getElementById(`spot-${slot}`);
-                spotElement.classList.remove("occupied");
-                spotElement.innerText = "";
-                updateStatus();
-                localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
-                modal.style.display = "none";
-            };
+    document.getElementById("removeBtn").onclick = () => {
+        delete parkingRecords[slot];
+        const spotElement = document.getElementById(`spot-${slot}`);
+        spotElement.classList.remove("occupied");
+        spotElement.innerText = "";
+        updateStatus();
+        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        modal.style.display = "none";
+    };
 
-            document.getElementById("cancelBtn").onclick = () => {
-                modal.style.display = "none";
-            };
+    document.getElementById("cancelBtn").onclick = () => {
+        modal.style.display = "none";
+    };
+}
+        
+        function updateSpot(slot) {
+            const spotElement = document.getElementById(`spot-${slot}`);
+            spotElement.classList.remove("occupied");
+            spotElement.innerText = "";
         }
 
         function toggleParking(slot) {
-            showModal(slot);
-        }
-
+    // 무조건 모달을 띄움 (출차든 수정이든)
+    showModal(slot);
+}
+        
         function createParkingLot() {
-            const lot = document.getElementById("parkingLot");
+    const lot = document.getElementById("parkingLot");
 
-            const linesBottom = [60, 70, 69, 81, 61, 73, 85, 97, 52];
-            const linesTop = [66, 76, 75, 87, 67, 79, 91, 103, 58];
+    const linesBottom = [60, 70, 69, 81, 61, 73, 85, 97, 52]; // 아래 줄 추가
+    const linesTop = [66, 76, 75, 87, 67, 79, 91, 103, 58];  // 위에 줄 추가
 
-            for (let i = 1; i <= 108; i++) {
-                const spot = document.createElement("div");
-                spot.classList.add("spot");
+    for (let i = 1; i <= 108; i++) {
+        const spot = document.createElement("div");
+        spot.classList.add("spot");
 
-                if (!activeSpots.includes(i)) {
-                    spot.classList.add("empty");
-                } else {
-                    spot.id = `spot-${i}`;
-                    spot.onclick = () => toggleParking(i);
-                }
-
-                if (linesBottom.includes(i)) {
-                    spot.classList.add("border-bottom");
-                }
-                if (linesTop.includes(i)) {
-                    spot.classList.add("border-top");
-                }
-
-                lot.appendChild(spot);
-            }
+        if (!activeSpots.includes(i)) {
+            spot.classList.add("empty");
+        } else {
+            spot.id = `spot-${i}`;
+            spot.onclick = () => toggleParking(i);
         }
 
-        // 페이지 로딩 시 localStorage 데이터 불러오기
-        window.onload = () => {
-            const savedData = localStorage.getItem("parkingRecords");
-            if (savedData) {
-                parkingRecords = JSON.parse(savedData);
-                Object.entries(parkingRecords).forEach(([slot, info]) => {
-                    const spot = document.getElementById(`spot-${slot}`);
-                    if (spot) {
-                        spot.classList.add("occupied");
-                        spot.innerText = `${info.room || "-"}\n${info.car || "-"}`;
-                    }
-                });
-            }
-            updateStatus();
-        };
+        // 특정 번호 아래 줄 추가
+        if (linesBottom.includes(i)) {
+            spot.classList.add("border-bottom");
+        }
+
+        // 특정 번호 위에 줄 추가
+        if (linesTop.includes(i)) {
+            spot.classList.add("border-top");
+        }
+
+        lot.appendChild(spot);
+    }
+}
+
+        // 검색 기능
+document.getElementById("searchIcon").onclick = () => {
+    const searchInput = document.getElementById("searchInput");
+    searchInput.style.display = searchInput.style.display === "block" ? "none" : "block";
+    if (searchInput.style.display === "block") {
+        searchInput.focus();
+    }
+};
+
+document.getElementById("searchInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        const searchValue = this.value.trim().toLowerCase();
+        const spots = document.querySelectorAll(".spot");
+
+        spots.forEach(spot => {
+            spot.style.outline = "none";
+            spot.style.backgroundColor = ""; 
+        });
+
+        if (!searchValue) return;
+
+        let found = false;
+
+        Object.entries(parkingRecords).forEach(([slot, info]) => {
+    if (info.room.includes(searchValue) || info.car.includes(searchValue)) {
+        const spot = document.getElementById(`spot-${slot}`);
+        spot.style.outline = "4px solid yellow";
+        spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+        spot.scrollIntoView({ behavior: "smooth", block: "center" }); // 🔥 자동 스크롤
+        found = true;
+    }
+});
+        
+        if (!found) {
+            alert("검색된 차량이 없습니다.");
+        }
+    }
+});
 
         createParkingLot();
+        updateStatus();
     </script>
 </body>
 </html>
