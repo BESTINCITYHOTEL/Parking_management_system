@@ -75,22 +75,33 @@
             box-sizing: border-box;
         }
 
-        .modal button {
-            width: 100%;
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+            }
+
+        .modal-buttons button {
+            flex: 1;
             padding: 12px;
-            background-color: green;
+            font-size: 16px;
             border: none;
-            color: white;
-            font-size: 18px;
             border-radius: 5px;
+            color: white;
+            box-sizing: border-box;
         }
 
-        .modal button.remove {
+        .modal-buttons .remove {
             background-color: orange;
         }
 
-        .modal button.cancel {
+        .modal-buttons .cancel {
             background-color: red;
+        }
+
+        .modal-buttons #submitBtn {
+            background-color: green;
         }
         /* 검색창 스타일 */
         .search-container {
@@ -128,15 +139,20 @@
 
     <div class="parking-container" id="parkingLot"></div>
     
-    <!-- 모달 창 -->
+<!-- 모달 창 -->
 <div id="modal" class="modal">
     <h3>주차 정보 수정</h3>
     <input type="text" id="room" placeholder="입실 호수" inputmode="numeric">
     <input type="text" id="car" placeholder="차량 뒷번호" inputmode="numeric">
-    <button id="submitBtn">저장</button>
-    <button class="remove" id="removeBtn">출차</button>
-    <button class="cancel" id="cancelBtn">취소</button>
+
+    <!-- 버튼을 div로 감싸고, 순서를 조정 -->
+    <div class="modal-buttons">
+        <button class="remove" id="removeBtn">출차</button>
+        <button id="submitBtn">저장</button>
+        <button class="cancel" id="cancelBtn">취소</button>
+    </div>
 </div>
+
 
     <script>
         const TOTAL_SPOTS = 39;
