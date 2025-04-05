@@ -242,31 +242,32 @@ document.getElementById("searchIcon").onclick = () => {
     searchInput.style.display = searchInput.style.display === "block" ? "none" : "block";
 };
 
-document.getElementById("searchInput").addEventListener("input", function() {
-    const searchValue = this.value.trim().toLowerCase();
-    const spots = document.querySelectorAll(".spot");
+document.getElementById("searchInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        const searchValue = this.value.trim().toLowerCase();
+        const spots = document.querySelectorAll(".spot");
 
-    // 모든 주차칸의 하이라이트 제거
-    spots.forEach(spot => {
-        spot.style.outline = "none";
-        spot.style.backgroundColor = ""; 
-    });
+        spots.forEach(spot => {
+            spot.style.outline = "none";
+            spot.style.backgroundColor = ""; 
+        });
 
-    if (!searchValue) return; // 검색어가 없으면 종료
+        if (!searchValue) return;
 
-    let found = false; // 검색 결과 여부 확인
+        let found = false;
 
-    Object.entries(parkingRecords).forEach(([slot, info]) => {
-        if (info.room.includes(searchValue) || info.car.includes(searchValue)) {
-            const spot = document.getElementById(`spot-${slot}`);
-            spot.style.outline = "4px solid yellow";
-            spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)"; // 배경을 연한 노란색으로 변경
-            found = true;
+        Object.entries(parkingRecords).forEach(([slot, info]) => {
+            if (info.room.includes(searchValue) || info.car.includes(searchValue)) {
+                const spot = document.getElementById(`spot-${slot}`);
+                spot.style.outline = "4px solid yellow";
+                spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
+                found = true;
+            }
+        });
+
+        if (!found) {
+            alert("검색된 차량이 없습니다.");
         }
-    });
-
-    if (!found) {
-        alert("검색된 차량이 없습니다."); // 검색 결과가 없을 경우 알림
     }
 });
 
