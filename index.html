@@ -236,64 +236,14 @@
     }
 }
 
-// 검색 아이콘 클릭 시
+        // 검색 기능
 document.getElementById("searchIcon").onclick = () => {
     const searchInput = document.getElementById("searchInput");
-    const isVisible = searchInput.style.display === "block";
-
-    searchInput.style.display = isVisible ? "none" : "block";
-    
-    // ✅ 검색창 닫히는 경우 -> 초기화
-    if (isVisible) {
-        searchInput.value = ""; // 입력값 비우기
-        clearHighlight();       // 하이라이트 초기화
+    searchInput.style.display = searchInput.style.display === "block" ? "none" : "block";
+    if (searchInput.style.display === "block") {
+        searchInput.focus();
     }
 };
-
-// 검색 입력 시
-document.getElementById("searchInput").addEventListener("input", function() {
-    const searchValue = this.value.trim().toLowerCase();
-
-    // ✅ 입력값이 없으면 초기화하고 종료
-    if (!searchValue) {
-        clearHighlight();
-        return;
-    }
-
-    let found = false;
-
-    // 먼저 기존 하이라이트 제거
-    clearHighlight();
-
-    Object.entries(parkingRecords).forEach(([slot, info]) => {
-        if (info.room.includes(searchValue) || info.car.includes(searchValue)) {
-            const spot = document.getElementById(`spot-${slot}`);
-            spot.style.outline = "4px solid yellow";
-            spot.style.backgroundColor = "rgba(255, 255, 0, 0.3)";
-            found = true;
-        }
-    });
-
-    if (!found) {
-        alert("검색된 차량이 없습니다.");
-    }
-});
-
-// ✅ 하이라이트 제거 함수
-function clearHighlight() {
-    const spots = document.querySelectorAll(".spot");
-
-    spots.forEach(spot => {
-        spot.style.outline = "none";
-        // 주차된 자리라면 빨간색 유지
-        const spotId = spot.id?.replace("spot-", "");
-        if (spotId && parkingRecords[spotId]) {
-            spot.style.backgroundColor = "red";
-        } else {
-            spot.style.backgroundColor = ""; // 기본
-        }
-    });
-}
 
 document.getElementById("searchInput").addEventListener("keypress", function(e) {
     if (e.key === "Enter") {
