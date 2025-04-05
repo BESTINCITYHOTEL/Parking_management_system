@@ -307,7 +307,6 @@ function scrollToCurrentResult() {
     if (currentSearchResults.length === 0) return;
     currentSearchResults.forEach(s => s.style.outline = "4px solid yellow"); // 전체 표시
     const current = currentSearchResults[currentSearchIndex];
-    current.scrollIntoView({ behavior: "smooth", block: "center" });
     current.style.outline = "4px solid orange"; // 현재 포커스 강조
 }
 
