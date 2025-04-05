@@ -236,6 +236,11 @@
 
         createParkingLot();
         updateStatus();
+        
+        function toggleParking(slot) {
+            if (document.getElementById("modal").style.display === "block") return;
+            showModal(slot);
+        }
     </script>
 </body>
 </html>
