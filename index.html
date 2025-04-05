@@ -73,20 +73,23 @@
             border-radius: 5px;
             font-size: 18px;
             box-sizing: border-box;
-        }
-        .modal button {
+       .modal button {
             width: 100%;
             padding: 15px;
-            background-color: green;
-            border: none;
-            color: white;
+            margin: 5px 0; /* 버튼 간격 명확히 */
             font-size: 18px;
+            border: none;
             border-radius: 5px;
-        }
-        .modal button.cancel {
-            background-color: red;
+            color: white;
         }
 
+    .modal button.remove {
+            background-color: orange;
+        }
+
+    .modal button.cancel {
+            background-color: red;
+        }
         /* 검색창 스타일 */
         .search-container {
             position: absolute;
@@ -109,10 +112,6 @@
             border: none;
             color: #333;
         }
-        .modal button.remove {
-            background-color: orange;
-            margin-top: 5px;
-}
     </style>
 </head>
 <body>
@@ -202,26 +201,10 @@
         }
 
         function toggleParking(slot) {
-            const spotElement = document.getElementById(`spot-${slot}`);
-
-            if (parkingRecords[slot]) {
-                // 🚗 주차된 자리 → 출차 or 수정 선택
-                const action = confirm("출차하시겠습니까? '취소'를 누르면 정보를 수정할 수 있습니다.");
-                if (action) {
-                    // ✅ 출차
-                    delete parkingRecords[slot];
-                    updateSpot(slot); // 주차 자리 업데이트
-                    updateStatus(); // 출차 후 상태 업데이트
-                } else {
-                    // ✏ 정보 수정
-                    showModal(slot);
-                }
-            } else {
-                // 🚗 빈 자리 → 새로 주차
-                showModal(slot);
-            }
-        }
-
+    // 무조건 모달을 띄움 (출차든 수정이든)
+    showModal(slot);
+}
+        
         function createParkingLot() {
     const lot = document.getElementById("parkingLot");
 
