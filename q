@@ -185,8 +185,9 @@
 <body>
   <h2>주차 관리 시스템</h2>
   <div class="top-buttons">
-    <button id="editModeBtn">🚗</button>
-    <button id="resetToDefaultBtn" style="display:none">🔄</button>
+    <button id="clearAllBtn" title="전체 출차">🧹</button>
+    <button id="editModeBtn" title="수정 모드">🚗</button>
+    <button id="resetToDefaultBtn" title="원상 복구" style="display:none">🔄</button>
   </div>
   <p id="status">현재 주차된 차량: 0대 / 남은 자리: 39대</p>
 
@@ -319,9 +320,22 @@
       updateStatus();
     }
 
+    // 🚗 수정모드 버튼
     document.getElementById("editModeBtn").onclick = toggleEditMode;
+
+    // 🔄 원상복구 버튼
     document.getElementById("resetToDefaultBtn").onclick = resetToDefaultSpots;
 
+    // 🧹 전체 출차 버튼
+    document.getElementById("clearAllBtn").onclick = () => {
+      if (confirm("정말 모든 차량을 출차하시겠습니까?")) {
+        parkingRecords = {};
+        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        createParkingLot();
+      }
+    };
+
+    // 초기 렌더링
     createParkingLot();
   </script>
 </body>
