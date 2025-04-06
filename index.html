@@ -185,9 +185,9 @@
 <body>
   <h2>주차 관리 시스템</h2>
   <div class="top-buttons">
-    <button id="clearAllBtn" title="전체 출차">🧹</button>
-    <button id="editModeBtn" title="수정 모드">🚗</button>
-    <button id="resetToDefaultBtn" title="원상 복구" style="display:none">🔄</button>
+    <button id="clearAllBtn">🧹</button>
+    <button id="editModeBtn">🚗</button>
+    <button id="resetToDefaultBtn" style="display:none">🔄</button>
   </div>
   <p id="status">현재 주차된 차량: 0대 / 남은 자리: 39대</p>
 
@@ -205,7 +205,7 @@
   </div>
 
   <script>
-    const TOTAL_SPOTS = 39;
+    const TOTAL_SPOTS = 108;
     const DEFAULT_ACTIVE_SPOTS = [
       1, 8, 15, 22, 26, 29, 37, 42, 43, 48,
       49, 52, 54, 55, 57, 58, 60, 61, 63, 64,
@@ -216,20 +216,23 @@
     let parkingRecords = JSON.parse(localStorage.getItem("parkingRecords") || "{}");
     let activeSpots = JSON.parse(localStorage.getItem("activeSpots") || JSON.stringify(DEFAULT_ACTIVE_SPOTS));
     let isEditMode = false;
+    let modalOpen = false;
+    let currentSlot = null;
 
     function updateStatus() {
       const occupiedCount = Object.keys(parkingRecords).length;
-      document.getElementById("status").innerText = `현재 주차된 차량: ${occupiedCount}대 / 남은 자리: ${TOTAL_SPOTS - occupiedCount}대`;
+      const availableCount = activeSpots.length - occupiedCount;
+      document.getElementById("status").innerText = `현재 주차된 차량: ${occupiedCount}대 / 남은 자리: ${availableCount}대`;
     }
 
     function showModal(slot) {
+      modalOpen = true;
+      currentSlot = slot;
       const modal = document.getElementById("modal");
       modal.style.display = "block";
-      window.currentSlot = slot;
 
       const roomInput = document.getElementById("room");
       const carInput = document.getElementById("car");
-
       roomInput.value = parkingRecords[slot]?.room || "";
       carInput.value = parkingRecords[slot]?.car || "";
 
@@ -243,6 +246,7 @@
         updateStatus();
         localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
         modal.style.display = "none";
+        modalOpen = false;
       };
 
       document.getElementById("removeBtn").onclick = () => {
@@ -253,10 +257,12 @@
         updateStatus();
         localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
         modal.style.display = "none";
+        modalOpen = false;
       };
 
       document.getElementById("cancelBtn").onclick = () => {
         modal.style.display = "none";
+        modalOpen = false;
       };
     }
 
@@ -268,11 +274,14 @@
 
     function resetToDefaultSpots() {
       activeSpots = [...DEFAULT_ACTIVE_SPOTS];
+      parkingRecords = {};
       localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
+      localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
       createParkingLot();
     }
 
     function toggleParking(slot) {
+      if (modalOpen) return;
       if (isEditMode) {
         const index = activeSpots.indexOf(slot);
         if (index === -1) {
@@ -285,7 +294,9 @@
         localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
         createParkingLot();
       } else {
-        showModal(slot);
+        if (activeSpots.includes(slot)) {
+          showModal(slot);
+        }
       }
     }
 
@@ -296,7 +307,7 @@
       const linesBottom = [60, 70, 69, 81, 61, 73, 85, 97, 52];
       const linesTop = [66, 76, 75, 87, 67, 79, 91, 103, 58];
 
-      for (let i = 1; i <= 108; i++) {
+      for (let i = 1; i <= TOTAL_SPOTS; i++) {
         const spot = document.createElement("div");
         spot.classList.add("spot");
 
@@ -320,22 +331,14 @@
       updateStatus();
     }
 
-    // 🚗 수정모드 버튼
     document.getElementById("editModeBtn").onclick = toggleEditMode;
-
-    // 🔄 원상복구 버튼
     document.getElementById("resetToDefaultBtn").onclick = resetToDefaultSpots;
-
-    // 🧹 전체 출차 버튼
     document.getElementById("clearAllBtn").onclick = () => {
-      if (confirm("정말 모든 차량을 출차하시겠습니까?")) {
-        parkingRecords = {};
-        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
-        createParkingLot();
-      }
+      parkingRecords = {};
+      localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+      createParkingLot();
     };
 
-    // 초기 렌더링
     createParkingLot();
   </script>
 </body>
