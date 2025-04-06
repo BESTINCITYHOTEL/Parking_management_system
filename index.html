@@ -67,19 +67,20 @@
 
 .modal {
     display: none;
-    position: absolute; /* fixed → absolute로 변경하여 키보드 가림 방지 */
-    top: 10%;
+    position: fixed;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.8);
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.85);
     color: white;
     padding: 30px;
     border-radius: 10px;
     z-index: 1000;
-    width: 66%;
+    width: 90%;
     max-width: 450px;
+    max-height: 80vh;
     overflow-y: auto;
-    max-height: 80vh; /* 키보드 올라올 때도 모달 내용 보이게 */
+    box-sizing: border-box;
 }
 
 .modal input {
