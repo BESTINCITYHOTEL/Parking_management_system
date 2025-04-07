@@ -70,6 +70,7 @@
     .empty {
       background: none;
       pointer-events: none;
+      border: 1px solid transparent;
     }
 
     .edit-mode .empty {
