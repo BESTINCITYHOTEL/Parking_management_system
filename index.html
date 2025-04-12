@@ -187,7 +187,6 @@
   <h2>주차 관리 시스템</h2>
   <div class="top-buttons">
     <button id="clearAllBtn">🧹</button>
-    <button onclick="handlePaste()">📋 붙여넣기</button>
     <button id="editModeBtn">🚗</button>
     <button id="resetToDefaultBtn" style="display:none">🔄</button>
   </div>
@@ -281,26 +280,7 @@
       localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
       createParkingLot();
     }
-    function handlePaste() {
-  const pastedData = prompt("붙여넣기 데이터를 입력하세요 (예: 101호 ABC123)");
-  if (!pastedData) return;
 
-  const [ho, carNum] = pastedData.split(/\s+/);
-  if (!ho || !carNum) {
-    alert("형식이 올바르지 않습니다. 예: 101호 ABC123");
-    return;
-  }
-
-  const existing = parkingRecords.find(r => r.ho === ho);
-  if (existing) {
-    alert(`${ho}에 이미 차량이 등록되어 있습니다.`);
-    return;
-  }
-
-  parkingRecords.push({ ho, carNum });
-  saveData();
-  renderSpots();
-}
     function toggleParking(slot) {
       if (modalOpen) return;
       if (isEditMode) {
