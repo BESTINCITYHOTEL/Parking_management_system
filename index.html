@@ -187,6 +187,7 @@
   <h2>주차 관리 시스템</h2>
   <div class="top-buttons">
     <button id="clearAllBtn">🧹</button>
+    <button id="pasteBtn">📋</button>
     <button id="editModeBtn">🚗</button>
     <button id="resetToDefaultBtn" style="display:none">🔄</button>
   </div>
@@ -341,6 +342,19 @@
     };
 
     createParkingLot();
+    document.getElementById("pasteBtn").onclick = async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text) {
+      alert("클립보드에 복사된 내용이 없습니다.");
+      return;
+    }
+    handlePastedData(text); // 기존 붙여넣기 처리 함수 실행
+  } catch (err) {
+    alert("클립보드에서 텍스트를 불러올 수 없습니다.\n브라우저 권한을 확인해주세요.");
+    console.error(err);
+  }
+};
   </script>
 </body>
 </html>
