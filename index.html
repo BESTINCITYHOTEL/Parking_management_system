@@ -187,6 +187,7 @@
   <h2>주차 관리 시스템</h2>
   <div class="top-buttons">
     <button id="clearAllBtn">🧹</button>
+    <button id="pasteBtn">📋</button>
     <button id="editModeBtn">🚗</button>
     <button id="resetToDefaultBtn" style="display:none">🔄</button>
   </div>
@@ -202,6 +203,15 @@
       <button class="remove" id="removeBtn">출차</button>
       <button id="submitBtn">저장</button>
       <button class="cancel" id="cancelBtn">취소</button>
+      <div id="pasteModal" class="modal">
+  <h3>붙여넣기 기반 차량 등록</h3>
+  <textarea id="pasteInput" placeholder="호수와 차량번호를 붙여넣으세요" rows="10" style="width: 100%; padding: 10px;"></textarea>
+  <div id="pastePreview" style="margin-top:10px; text-align:left; font-size:14px;"></div>
+  <div class="modal-buttons">
+    <button id="applyPasteBtn" style="background-color: green;">적용</button>
+    <button id="cancelPasteBtn" class="cancel">취소</button>
+  </div>
+</div>
     </div>
   </div>
 
@@ -341,6 +351,62 @@
     };
 
     createParkingLot();
+    document.getElementById("pasteBtn").onclick = () => {
+  document.getElementById("pasteModal").style.display = "block";
+  document.getElementById("pasteInput").value = "";
+  document.getElementById("pastePreview").innerHTML = "";
+};
+
+document.getElementById("cancelPasteBtn").onclick = () => {
+  document.getElementById("pasteModal").style.display = "none";
+};
+
+document.getElementById("pasteInput").oninput = () => {
+  const raw = document.getElementById("pasteInput").value;
+  const preview = document.getElementById("pastePreview");
+  const lines = raw.split("\n").filter(l => l.trim());
+  const matches = [];
+
+  for (const line of lines) {
+    const match = line.match(/(\d+)[^\d]+(\d{4})/); // 예: "305호 1234"
+    if (match) {
+      const [_, room, car] = match;
+      const foundSlot = Object.entries(parkingRecords).find(
+        ([slot, data]) => data.room === room || data.car === car
+      );
+      const warning = foundSlot ? `⚠ 중복 (${foundSlot[0]}번 자리)` : "";
+      matches.push({ room, car, warning });
+    }
+  }
+
+  preview.innerHTML = matches.map(m =>
+    `<div>${m.room}호 - ${m.car} ${m.warning ? `<span style="color: orange">${m.warning}</span>` : ''}</div>`
+  ).join("");
+  document.getElementById("applyPasteBtn").dataset.matches = JSON.stringify(matches);
+};
+
+document.getElementById("applyPasteBtn").onclick = () => {
+  const matches = JSON.parse(document.getElementById("applyPasteBtn").dataset.matches || "[]");
+  let updated = false;
+
+  for (let i = 1; i <= TOTAL_SPOTS; i++) {
+    if (!activeSpots.includes(i)) continue;
+    if (parkingRecords[i]) continue;
+
+    const info = matches.shift();
+    if (!info) break;
+
+    parkingRecords[i] = { room: info.room, car: info.car };
+    updated = true;
+  }
+
+  if (updated) {
+    localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+    createParkingLot();
+  }
+
+  document.getElementById("pasteModal").style.display = "none";
+};
   </script>
 </body>
 </html>
