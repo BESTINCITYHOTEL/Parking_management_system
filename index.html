@@ -187,7 +187,6 @@
   <h2>주차 관리 시스템</h2>
   <div class="top-buttons">
     <button id="clearAllBtn">🧹</button>
-    <button id="pasteBtn">📋</button>
     <button id="editModeBtn">🚗</button>
     <button id="resetToDefaultBtn" style="display:none">🔄</button>
   </div>
@@ -342,75 +341,6 @@
     };
 
     createParkingLot();
-document.getElementById("pasteBtn").onclick = () => {
-  document.getElementById("pasteModal").style.display = "block";
-  document.getElementById("pasteInput").value = "";
-  document.getElementById("pastePreview").innerHTML = "";
-};
-
-document.getElementById("cancelPasteBtn").onclick = () => {
-  document.getElementById("pasteModal").style.display = "none";
-};
-
-document.getElementById("pasteInput").oninput = () => {
-  const raw = document.getElementById("pasteInput").value;
-  const preview = document.getElementById("pastePreview");
-  const lines = raw.split("\n").filter(l => l.trim());
-  const matches = [];
-
-  for (const line of lines) {
-    const match = line.match(/(\d+)[^\d]+(\d{4})/); // 예: "305호 1234"
-    if (match) {
-      const [_, room, car] = match;
-      const foundSlot = Object.entries(parkingRecords).find(
-        ([slot, data]) => data.room === room || data.car === car
-      );
-      const warning = foundSlot ? `⚠ 중복 (${foundSlot[0]}번 자리)` : "";
-      matches.push({ room, car, warning });
-    }
-  }
-
-  preview.innerHTML = matches.map(m =>
-    `<div>${m.room}호 - ${m.car} ${m.warning ? `<span style="color: orange">${m.warning}</span>` : ''}</div>`
-  ).join("");
-  document.getElementById("applyPasteBtn").dataset.matches = JSON.stringify(matches);
-};
-
-document.getElementById("applyPasteBtn").onclick = () => {
-  const matches = JSON.parse(document.getElementById("applyPasteBtn").dataset.matches || "[]");
-  let updated = false;
-
-  for (let i = 1; i <= TOTAL_SPOTS; i++) {
-    if (!activeSpots.includes(i)) continue;
-    if (parkingRecords[i]) continue;
-
-    const info = matches.shift();
-    if (!info) break;
-
-    parkingRecords[i] = { room: info.room, car: info.car };
-    updated = true;
-  }
-
-  if (updated) {
-    localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
-    createParkingLot();
-  }
-
-  document.getElementById("pasteModal").style.display = "none";
-};
-
-document.getElementById("pasteBtn").onclick = async () => {
-  try {
-    const text = await navigator.clipboard.readText();
-    if (!text) {
-      alert("클립보드에 복사된 내용이 없습니다.");
-      return;
-    }
-    handlePastedData(text);
-  } catch (err) {
-    alert("클립보드 읽기 오류: " + err);
-  }
-};
   </script>
 </body>
 </html>
