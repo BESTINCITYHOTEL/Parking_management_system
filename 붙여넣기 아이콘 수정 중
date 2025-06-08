@@ -358,7 +358,7 @@
       const parsedLines = [];
 
       lines.forEach((line, idx) => {
-        const parts = line.split(/\s+/);
+        const parts = line.split('\t');
         let roomNumber = parts[0] || '';
         let carData = parts.find(part => part.startsWith('차량:')) || '';
         let carNumber = carData ? carData.replace('차량:', '') : '';
