@@ -372,10 +372,11 @@
 
       parsedLines.forEach((item) => {
         const {roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts} = item;
+        let hasError = false;
         // W15: 유효하지 않은 입실 호수
         if (roomNumber && !isValidRoomNumber(roomNumber)) {
           errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
-          return;
+          hasError = true;
         }
         // W1: 차량번호 형식 오류
         if (carNumber && !isValidCarNumber(carNumber)) {
@@ -386,7 +387,7 @@
           } else {
             errors.push(`[입력된 정보] '${data2} ${data3}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
           }
-          return;
+          hasError = true;
         }
         // W3: '차량:도보' 또는 '차량:밖에주차'
         if (carData && (carNumber === '도보' || carNumber === '밖에주차')) {
@@ -397,7 +398,7 @@
           } else {
             errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           }
-          return;
+          hasError = true;
         }
         // W5: 도보만 단독 존재
         if (!carData && partsContain(parts, '도보')) {
@@ -408,7 +409,7 @@
           } else {
             errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 도보 방문입니다.`);
           }
-          return;
+          hasError = true;
         }
         // W6: 한 줄에 '도보'와 '차량:XXXX'가 같이 있는 경우
         if (carNumber && partsContain(parts, '도보')) {
@@ -419,7 +420,7 @@
           } else {
             errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           }
-          return;
+          hasError = true;
         }
         // W7: 한 줄에 차량번호가 2개 이상 존재
         if (parts.filter(p=>p.startsWith('차량:')).length > 1) {
@@ -430,7 +431,7 @@
           } else {
             errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 차량 번호가 여러 개 존재합니다.`);
           }
-          return;
+          hasError = true;
         }
         // W4: 입실 호수 없이 '차량' 또는 '-'만 단독 존재
         if (!roomNumber && (partsContain(parts, '차량') || partsContain(parts, '-'))) {
@@ -439,28 +440,29 @@
           } else {
             errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 아직 미방문입니다.`);
           }
-          return;
+          hasError = true;
         }
         // W2: 차량번호는 있는데 입실 호수 없음
         if (carNumber && !roomNumber) {
           errors.push(`[입력된 정보] 차량번호:${carNumber} 차량은 아직 체크인하지 않았습니다.(객실 미배정)`);
-          return;
+          hasError = true;
         }
         // W16: 입실 호수는 있는데 차량 정보 누락
         if (roomNumber && (!carNumber || carNumber === '-' || carNumber === '차량')) {
           errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호의 주차 정보가 누락되었습니다.`);
-          return;
+          hasError = true;
         }
         // W9: 붙여넣기 내 차량번호 중복
         if (carNumber && carDupMap.get(carNumber) > 1) {
           errors.push(`[입력된 정보] 차량번호:${carNumber}가 중복됩니다.`);
-          return;
+          hasError = true;
         }
         // W10: 붙여넣기 내 입실호수 중복
         if (roomNumber && roomDupMap.get(roomNumber) > 1) {
           errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호가 중복됩니다.`);
-          return;
+          hasError = true;
         }
+        if (hasError) return;
         // 데이터 유효
         if (carNumber && roomNumber) {
           validData.push({roomNumber, carNumber, data2, data3, isSpecialPlatform, line: item.line});
@@ -575,7 +577,12 @@
       });
       return categoryMap;
     }
-    // -------------------------------------------------
+
+    // --- 중복 에러 메시지 필터링 ---
+    function filterDuplicateErrors(errors) {
+      // 문자열 기준으로 완전 중복 제거
+      return Array.from(new Set(errors));
+    }
 
     function showModal(slot) {
       modalOpen = true;
@@ -660,7 +667,8 @@
         const { previewData: newPreviewData, errors: allErr } = generatePreviewAndErrors(validData, parkingRecords, errors);
         updateDataArr = validData;
         previewData = newPreviewData;
-        allErrors = allErr;
+        // --- 중복 메시지 필터링 적용 ---
+        allErrors = filterDuplicateErrors(allErr);
         showPreviewModal(allErrors, previewData);
       } catch (err) {
         alert('클립보드 데이터를 읽을 수 없습니다.');
