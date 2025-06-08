@@ -156,6 +156,71 @@
       background-color: green;
     }
 
+    .preview-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 1000;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+    }
+
+    .preview-table th, .preview-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .preview-table th {
+      background-color: #444;
+    }
+
+    .preview-table tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .preview-summary {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+    }
+
+    .error-list {
+      background-color: rgba(255, 0, 0, 0.1);
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .error-list details summary {
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .error-list details[open] summary {
+      color: #e63737;
+    }
+    .error-list details {
+      margin-bottom: 4px;
+    }
+
     @media (max-width: 600px) {
       .parking-container {
         height: 400px;
@@ -188,6 +253,7 @@
   <div class="top-buttons">
     <button id="clearAllBtn">🧹</button>
     <button id="editModeBtn">🚗</button>
+    <button id="pasteIcon">📋</button>
     <button id="resetToDefaultBtn" style="display:none">🔄</button>
   </div>
   <p id="status">현재 주차된 차량: 0대 / 남은 자리: 39대</p>
@@ -205,6 +271,32 @@
     </div>
   </div>
 
+  <div id="previewModal" class="preview-modal">
+    <h3>데이터 업데이트 미리보기</h3>
+    <div class="preview-summary">
+      <p>총 <span id="totalCount">0</span>개의 데이터 중 <span id="matchCount">0</span>개 매칭됨</p>
+    </div>
+    <div id="previewContent">
+      <table class="preview-table">
+        <thead>
+          <tr>
+            <th>주차 위치</th>
+            <th>현재 차량번호</th>
+            <th>현재 호수</th>
+            <th>업데이트 호수</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody id="previewTableBody">
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-buttons">
+      <button id="applyUpdateBtn" class="remove">적용</button>
+      <button id="cancelUpdateBtn" class="cancel">취소</button>
+    </div>
+  </div>
+
   <script>
     const TOTAL_SPOTS = 108;
     const DEFAULT_ACTIVE_SPOTS = [
@@ -213,18 +305,277 @@
       66, 67, 69, 70, 72, 73, 75, 76, 78, 79,
       81, 82, 85, 87, 91, 97, 103, 106, 108
     ];
+    const PLATFORM_KEYWORDS = ['여기', '야놀자', '타임', '나우', '꿀스', '아고다'];
+    const VALID_ROOM_RANGES = [
+      [201, 214],
+      [301, 314],
+      [501, 514],
+      [601, 614],
+      [701, 714]
+    ];
 
     let parkingRecords = JSON.parse(localStorage.getItem("parkingRecords") || "{}");
     let activeSpots = JSON.parse(localStorage.getItem("activeSpots") || JSON.stringify(DEFAULT_ACTIVE_SPOTS));
     let isEditMode = false;
     let modalOpen = false;
     let currentSlot = null;
+    let updateDataArr = [];
+    let previewData = [];
+    let allErrors = [];
 
     function updateStatus() {
       const occupiedCount = Object.keys(parkingRecords).length;
       const availableCount = activeSpots.length - occupiedCount;
       document.getElementById("status").innerText = `현재 주차된 차량: ${occupiedCount}대 / 남은 자리: ${availableCount}대`;
     }
+
+    function isValidRoomNumber(room) {
+      const roomNum = parseInt(room);
+      return VALID_ROOM_RANGES.some(([min, max]) => 
+        roomNum >= min && roomNum <= max
+      );
+    }
+
+    function isValidCarNumber(car) {
+      return /^\d{4}$/.test(car);
+    }
+
+    function partsContain(parts, keyword) {
+      return parts.some(p => p === keyword || p.includes(keyword));
+    }
+
+    // 붙여넣기 데이터 파싱 및 1차 검증 (P/W 규칙)
+    function parseAndValidateData(text) {
+      const lines = text.trim().split('\n');
+      const validData = [];
+      const errors = [];
+
+      // 중복 체크용
+      const carDupMap = new Map();
+      const roomDupMap = new Map();
+
+      // 1차 파싱 및 중복 체크 준비
+      const parsedLines = [];
+
+      lines.forEach((line, idx) => {
+        const parts = line.split(/\s+/);
+        let roomNumber = parts[0] || '';
+        let carData = parts.find(part => part.startsWith('차량:')) || '';
+        let carNumber = carData ? carData.replace('차량:', '') : '';
+        let data2 = parts[1] || '';
+        let data3 = parts[2] || '';
+        const isSpecialPlatform = PLATFORM_KEYWORDS.some(keyword => data2.includes(keyword));
+        if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
+        if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
+        parsedLines.push({roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts, line, idx});
+      });
+
+      parsedLines.forEach((item) => {
+        const {roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts} = item;
+        // W15: 유효하지 않은 입실 호수
+        if (roomNumber && !isValidRoomNumber(roomNumber)) {
+          errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
+          return;
+        }
+        // W1: 차량번호 형식 오류
+        if (carNumber && !isValidCarNumber(carNumber)) {
+          if (roomNumber) {
+            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 차량 번호 형식이 올바르지 않습니다.`);
+          } else if (isSpecialPlatform) {
+            errors.push(`[입력된 정보] '${data2}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+          } else {
+            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+          }
+          return;
+        }
+        // W3: '차량:도보' 또는 '차량:밖에주차'
+        if (carData && (carNumber === '도보' || carNumber === '밖에주차')) {
+          if (roomNumber) {
+            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+          } else if (isSpecialPlatform) {
+            errors.push(`[입력된 정보] '${data2}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+          } else {
+            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+          }
+          return;
+        }
+        // W5: 도보만 단독 존재
+        if (!carData && partsContain(parts, '도보')) {
+          if (roomNumber) {
+            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보 방문입니다.`);
+          } else if (isSpecialPlatform) {
+            errors.push(`[입력된 정보] '${data2}' 고객님은 도보 방문입니다.`);
+          } else {
+            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 도보 방문입니다.`);
+          }
+          return;
+        }
+        // W6: 한 줄에 '도보'와 '차량:XXXX'가 같이 있는 경우
+        if (carNumber && partsContain(parts, '도보')) {
+          if (roomNumber) {
+            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+          } else if (isSpecialPlatform) {
+            errors.push(`[입력된 정보] '${data2}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+          } else {
+            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+          }
+          return;
+        }
+        // W7: 한 줄에 차량번호가 2개 이상 존재
+        if (parts.filter(p=>p.startsWith('차량:')).length > 1) {
+          if (roomNumber) {
+            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호에 차량 번호가 여러 개 존재합니다.`);
+          } else if (isSpecialPlatform) {
+            errors.push(`[입력된 정보] '${data2}' 고객님은 차량 번호가 여러 개 존재합니다.`);
+          } else {
+            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 차량 번호가 여러 개 존재합니다.`);
+          }
+          return;
+        }
+        // W4: 입실 호수 없이 '차량' 또는 '-'만 단독 존재
+        if (!roomNumber && (partsContain(parts, '차량') || partsContain(parts, '-'))) {
+          if (isSpecialPlatform) {
+            errors.push(`[입력된 정보] '${data2}' 고객님은 아직 미방문입니다.`);
+          } else {
+            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 아직 미방문입니다.`);
+          }
+          return;
+        }
+        // W2: 차량번호는 있는데 입실 호수 없음
+        if (carNumber && !roomNumber) {
+          errors.push(`[입력된 정보] 차량번호:${carNumber} 차량은 아직 체크인하지 않았습니다.(객실 미배정)`);
+          return;
+        }
+        // W16: 입실 호수는 있는데 차량 정보 누락
+        if (roomNumber && (!carNumber || carNumber === '-' || carNumber === '차량')) {
+          errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호의 주차 정보가 누락되었습니다.`);
+          return;
+        }
+        // W9: 붙여넣기 내 차량번호 중복
+        if (carNumber && carDupMap.get(carNumber) > 1) {
+          errors.push(`[입력된 정보] 차량번호:${carNumber}가 중복됩니다.`);
+          return;
+        }
+        // W10: 붙여넣기 내 입실호수 중복
+        if (roomNumber && roomDupMap.get(roomNumber) > 1) {
+          errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호가 중복됩니다.`);
+          return;
+        }
+        // 데이터 유효
+        if (carNumber && roomNumber) {
+          validData.push({roomNumber, carNumber, data2, data3, isSpecialPlatform, line: item.line});
+        }
+      });
+
+      return { validData, errors };
+    }
+
+    // W8, W11, W12, W13 시스템-붙여넣기 데이터 비교 및 previewData 생성
+    function generatePreviewAndErrors(validData, parkingRecords, errors = []) {
+      const previewData = [];
+      // 시스템 데이터: 차량번호/호실 중복 체크용
+      const systemCarMap = new Map();
+      const systemRoomMap = new Map();
+
+      Object.values(parkingRecords).forEach(rec => {
+        if (rec.car) systemCarMap.set(rec.car, (systemCarMap.get(rec.car)||0)+1);
+        if (rec.room) systemRoomMap.set(rec.room, (systemRoomMap.get(rec.room)||0)+1);
+      });
+
+      // 붙여넣기 데이터 -> 시스템 데이터 매칭 및 W8 처리
+      validData.forEach(({carNumber, roomNumber}) => {
+        // 시스템에 동일 차량번호가 있나?
+        const slot = Object.keys(parkingRecords).find(s => parkingRecords[s].car === carNumber);
+        const sysRoom = slot ? parkingRecords[slot].room : undefined;
+        // W8: 붙여넣기 데이터와 시스템 데이터 불일치
+        if (slot) {
+          if (sysRoom && sysRoom !== roomNumber) {
+            errors.push(`[입력된 정보] 차량 번호:${carNumber}의 입실 호수가 시트 정보와 시스템과 일치하지 않습니다.`);
+            previewData.push({
+              slot, currentCar: carNumber, currentRoom: sysRoom, newRoom: roomNumber, status: "입실호수 불일치"
+            });
+            return;
+          }
+          if (roomNumber && sysRoom === roomNumber) {
+            previewData.push({
+              slot, currentCar: carNumber, currentRoom: sysRoom, newRoom: roomNumber, status: "동일"
+            });
+            return;
+          }
+        }
+        // 시스템에 동일 입실호수가 있나?
+        const slotByRoom = Object.keys(parkingRecords).find(s => parkingRecords[s].room === roomNumber);
+        const sysCar = slotByRoom ? parkingRecords[slotByRoom].car : undefined;
+        if (slotByRoom && sysCar && sysCar !== carNumber) {
+          errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호의 차량 번호가 시트 정보와 시스템과 일치하지 않습니다.`);
+          previewData.push({
+            slot: slotByRoom, currentCar: sysCar, currentRoom: roomNumber, newRoom: roomNumber, status: "차량번호 불일치"
+          });
+          return;
+        }
+        // 정상 매칭
+        if (slot) {
+          previewData.push({
+            slot, currentCar: carNumber, currentRoom: sysRoom, newRoom: roomNumber, status: "업데이트"
+          });
+        }
+      });
+
+      // W11: 시스템 내 차량번호 중복
+      for (const [car, count] of systemCarMap) {
+        if (count > 1) errors.push(`[시스템 정보] 차량번호:${car}가 중복됩니다.`);
+      }
+      // W12: 시스템 내 입실호수 중복
+      for (const [room, count] of systemRoomMap) {
+        if (count > 1) errors.push(`[시스템 정보] 입실 호수 ${room}호가 중복됩니다.`);
+      }
+      // W13: 시스템에는 있는데 붙여넣기에 없는 경우(미등록)
+      const pasteCarSet = new Set(validData.map(d=>d.carNumber));
+      const pasteRoomSet = new Set(validData.map(d=>d.roomNumber));
+      Object.entries(parkingRecords).forEach(([slot, rec]) => {
+        if (rec.car && !pasteCarSet.has(rec.car)) {
+          errors.push(`[시스템 정보] 차량번호:${rec.car}의 차량은 주차 미등록 차량입니다.(외부 차량일 수 있습니다.)`);
+        }
+        if (rec.room && !pasteRoomSet.has(rec.room)) {
+          errors.push(`[시스템 정보] 입실 호수 ${rec.room}호 차량은 주차 미등록 차량입니다.(외부 차량일 수 있습니다.)`);
+        }
+      });
+
+      return { previewData, errors };
+    }
+
+    // --- 에러 메시지 분류 및 그룹핑 기능 추가 ---
+    function classifyError(msg) {
+      if (
+        msg.includes('형식이 올바르지 않습니다') ||
+        msg.includes('유효하지 않는 호수')
+      ) return '형식 오류';
+      if (
+        msg.includes('누락') ||
+        msg.includes('미방문') ||
+        msg.includes('미배정')
+      ) return '누락/미방문';
+      if (
+        msg.includes('도보') ||
+        msg.includes('밖에 주차') ||
+        msg.includes('밖에 주차 고객')
+      ) return '특수상황';
+      if (msg.includes('중복')) return '중복';
+      if (msg.includes('불일치')) return '불일치';
+      if (msg.includes('미등록')) return '미등록';
+      return '기타';
+    }
+
+    function groupErrorsByCategory(errors) {
+      const categoryMap = {};
+      errors.forEach(msg => {
+        const cat = classifyError(msg);
+        if (!categoryMap[cat]) categoryMap[cat] = [];
+        categoryMap[cat].push(msg);
+      });
+      return categoryMap;
+    }
+    // -------------------------------------------------
 
     function showModal(slot) {
       modalOpen = true;
@@ -301,6 +652,97 @@
       }
     }
 
+    async function handlePaste() {
+      try {
+        const text = await navigator.clipboard.readText();
+        const { validData, errors } = parseAndValidateData(text);
+        // W8, W11~W13까지 반영
+        const { previewData: newPreviewData, errors: allErr } = generatePreviewAndErrors(validData, parkingRecords, errors);
+        updateDataArr = validData;
+        previewData = newPreviewData;
+        allErrors = allErr;
+        showPreviewModal(allErrors, previewData);
+      } catch (err) {
+        alert('클립보드 데이터를 읽을 수 없습니다.');
+        console.error('클립보드 에러:', err);
+      }
+    }
+
+    function showPreviewModal(errors, previewData) {
+      const modal = document.getElementById('previewModal');
+      const tableBody = document.getElementById('previewTableBody');
+      const totalCount = updateDataArr.length;
+      const matchCount = previewData.length;
+
+      document.getElementById('totalCount').textContent = totalCount;
+      document.getElementById('matchCount').textContent = matchCount;
+
+      // 에러 메시지 영역 초기화
+      const existingErrorList = document.querySelector('.error-list');
+      if (existingErrorList) {
+        existingErrorList.remove();
+      }
+
+      // 에러 메시지 표시 (카테고리별 그룹핑)
+      if (errors.length > 0) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-list';
+
+        const grouped = groupErrorsByCategory(errors);
+        Object.entries(grouped).forEach(([cat, msgs]) => {
+          const details = document.createElement('details');
+          details.open = false;
+          const summary = document.createElement('summary');
+          summary.textContent = `${cat} (${msgs.length})`;
+          details.appendChild(summary);
+          msgs.forEach(m => {
+            const div = document.createElement('div');
+            div.textContent = m;
+            details.appendChild(div);
+          });
+          errorDiv.appendChild(details);
+        });
+        document.getElementById('previewContent').insertBefore(
+          errorDiv,
+          document.getElementById('previewContent').firstChild
+        );
+      }
+
+      tableBody.innerHTML = previewData.map(item => `
+        <tr>
+          <td>${item.slot}</td>
+          <td>${item.currentCar}</td>
+          <td>${item.currentRoom}</td>
+          <td>${item.newRoom}</td>
+          <td>${item.status}</td>
+        </tr>
+      `).join('');
+
+      modal.style.display = 'block';
+    }
+
+    function applyUpdate() {
+      let updateCount = 0;
+
+      previewData.forEach(item => {
+        parkingRecords[item.slot] = {
+          car: item.currentCar,
+          room: item.newRoom
+        };
+
+        const spotElement = document.getElementById(`spot-${item.slot}`);
+        if (spotElement) {
+          spotElement.innerText = `${item.newRoom}\n${item.currentCar}`;
+        }
+        updateCount++;
+      });
+
+      localStorage.setItem('parkingRecords', JSON.stringify(parkingRecords));
+      updateStatus();
+      document.getElementById('previewModal').style.display = 'none';
+      alert(`총 ${updateCount}개의 주차 정보가 업데이트되었습니다.`);
+    }
+
     function createParkingLot() {
       const lot = document.getElementById("parkingLot");
       lot.innerHTML = "";
@@ -332,15 +774,22 @@
       updateStatus();
     }
 
-    document.getElementById("editModeBtn").onclick = toggleEditMode;
-    document.getElementById("resetToDefaultBtn").onclick = resetToDefaultSpots;
-    document.getElementById("clearAllBtn").onclick = () => {
-      parkingRecords = {};
-      localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
-      createParkingLot();
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('editModeBtn').onclick = toggleEditMode;
+      document.getElementById('resetToDefaultBtn').onclick = resetToDefaultSpots;
+      document.getElementById('clearAllBtn').onclick = () => {
+        parkingRecords = {};
+        localStorage.setItem('parkingRecords', JSON.stringify(parkingRecords));
+        createParkingLot();
+      };
+      document.getElementById('pasteIcon').onclick = handlePaste;
+      document.getElementById('applyUpdateBtn').onclick = applyUpdate;
+      document.getElementById('cancelUpdateBtn').onclick = () => {
+        document.getElementById('previewModal').style.display = 'none';
+      };
 
-    createParkingLot();
+      createParkingLot();
+    });
   </script>
 </body>
 </html>
