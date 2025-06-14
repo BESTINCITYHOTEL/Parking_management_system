@@ -358,6 +358,7 @@
       const parsedLines = [];
 
       lines.forEach((line, idx) => {
+        // 탭 또는 공백 여러 개를 모두 구분자로 인식
         const parts = line.split(/\s+/);
 
         // 방 번호(입실 호수) 파싱: 첫 번째 컬럼이 숫자(정수)일 때만 roomNumber로 인식
@@ -375,10 +376,20 @@
         for (let i = 0; i < parts.length; i++) {
           if (i === 0 && /^\d+$/.test(parts[0])) continue;
           if (parts[i].startsWith('차량:')) continue;
-          data2 = parts[i];
+          data2 = parts[i].trim();
           break;
         }
-        let data3 = parts.find((p, idx) => idx !== 0 && !p.startsWith('차량:') && p !== data2) || '';
+        // 데이터3 추출: data2 다음에 나오는, '차량:'도 아니고, 방번호(숫자)도 아닌 부분
+        let data3 = '';
+        for (let i = 0; i < parts.length; i++) {
+          if (parts[i].trim() === data2) continue;
+          if (i === 0 && /^\d+$/.test(parts[0])) continue;
+          if (parts[i].startsWith('차량:')) continue;
+          if (parts[i].trim()) {
+            data3 = parts[i].trim();
+            break;
+          }
+        }
         const isSpecialPlatform = PLATFORM_KEYWORDS.some(keyword => data2 && data2.includes(keyword));
         if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
         if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
@@ -388,6 +399,9 @@
       parsedLines.forEach((item) => {
         const {roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts} = item;
         let hasError = false;
+        // nameField: data2, data3를 공백 없이 합쳐서
+        const nameField = [data2, data3].filter(Boolean).join(' ').trim();
+
         // W15: 유효하지 않은 입실 호수
         if (roomNumber && !isValidRoomNumber(roomNumber)) {
           errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
@@ -400,7 +414,7 @@
           } else if (isSpecialPlatform) {
             errors.push(`[입력된 정보] '${data2}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
           } else {
-            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+            errors.push(`[입력된 정보] '${nameField}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
           }
           hasError = true;
         }
@@ -411,7 +425,7 @@
           } else if (isSpecialPlatform) {
             errors.push(`[입력된 정보] '${data2}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           } else {
-            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+            errors.push(`[입력된 정보] '${nameField}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           }
           hasError = true;
         }
@@ -422,7 +436,7 @@
           } else if (isSpecialPlatform) {
             errors.push(`[입력된 정보] '${data2}' 고객님은 도보 방문입니다.`);
           } else {
-            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 도보 방문입니다.`);
+            errors.push(`[입력된 정보] '${nameField}' 고객님은 도보 방문입니다.`);
           }
           hasError = true;
         }
@@ -433,7 +447,7 @@
           } else if (isSpecialPlatform) {
             errors.push(`[입력된 정보] '${data2}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           } else {
-            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+            errors.push(`[입력된 정보] '${nameField}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           }
           hasError = true;
         }
@@ -444,7 +458,7 @@
           } else if (isSpecialPlatform) {
             errors.push(`[입력된 정보] '${data2}' 고객님은 차량 번호가 여러 개 존재합니다.`);
           } else {
-            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 차량 번호가 여러 개 존재합니다.`);
+            errors.push(`[입력된 정보] '${nameField}' 고객님은 차량 번호가 여러 개 존재합니다.`);
           }
           hasError = true;
         }
@@ -456,7 +470,7 @@
           if (isSpecialPlatform) {
             errors.push(`[입력된 정보] '${data2}' 고객님은 아직 미방문입니다.`);
           } else {
-            errors.push(`[입력된 정보] '${data2} ${data3}' 고객님은 아직 미방문입니다.`);
+            errors.push(`[입력된 정보] '${nameField}' 고객님은 아직 미방문입니다.`);
           }
           hasError = true;
         }
