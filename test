@@ -359,12 +359,27 @@
 
       lines.forEach((line, idx) => {
         const parts = line.split(/\s+/);
-        let roomNumber = parts[0] || '';
+
+        // 방 번호(입실 호수) 파싱: 첫 번째 컬럼이 숫자(정수)일 때만 roomNumber로 인식
+        let roomNumber = '';
+        if (parts[0] && /^\d+$/.test(parts[0])) {
+          roomNumber = parts[0];
+        }
+
+        // 차량번호(차량:) 추출
         let carData = parts.find(part => part.startsWith('차량:')) || '';
         let carNumber = carData ? carData.replace('차량:', '') : '';
-        let data2 = parts[1] || '';
-        let data3 = parts[2] || '';
-        const isSpecialPlatform = PLATFORM_KEYWORDS.some(keyword => data2.includes(keyword));
+
+        // 고객명(플랫폼) 추출: 첫 번째로 '차량:'도 아니고, 방번호(숫자)도 아닌 부분
+        let data2 = '';
+        for (let i = 0; i < parts.length; i++) {
+          if (i === 0 && /^\d+$/.test(parts[0])) continue;
+          if (parts[i].startsWith('차량:')) continue;
+          data2 = parts[i];
+          break;
+        }
+        let data3 = parts.find((p, idx) => idx !== 0 && !p.startsWith('차량:') && p !== data2) || '';
+        const isSpecialPlatform = PLATFORM_KEYWORDS.some(keyword => data2 && data2.includes(keyword));
         if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
         if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
         parsedLines.push({roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts, line, idx});
@@ -433,8 +448,11 @@
           }
           hasError = true;
         }
-        // W4: 입실 호수 없이 '차량' 또는 '-'만 단독 존재
-        if (!roomNumber && (partsContain(parts, '차량') || partsContain(parts, '-'))) {
+        // W4: 입실 호수 없이 '차량' 또는 '-'만 단독 존재 (정확히 일치할 때만)
+        if (
+          !roomNumber &&
+          (parts.includes('차량') || parts.includes('-'))
+        ) {
           if (isSpecialPlatform) {
             errors.push(`[입력된 정보] '${data2}' 고객님은 아직 미방문입니다.`);
           } else {
