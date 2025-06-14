@@ -398,16 +398,22 @@
       parsedLines.forEach((item) => {
         const {roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts} = item;
         let hasError = false;
-        // nameField: data2, data3를 공백 없이 합쳐서
         const nameField = [data2, data3].filter(Boolean).join(' ').trim();
+        const hasDobo = partsContain(parts, '도보');
+        const hasCar = !!carData;
+        const isCarDobo = carData === '차량:도보';
+        const isCarBake = carData === '차량:밖에주차';
 
         // W15: 유효하지 않은 입실 호수
         if (roomNumber && !isValidRoomNumber(roomNumber)) {
           errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
           hasError = true;
         }
-        // W1: 차량번호 형식 오류
-        if (carNumber && !isValidCarNumber(carNumber)) {
+
+        // W1: 차량번호 형식 오류 (차량:도보/차량:밖에주차는 예외)
+        if (
+          carNumber && !isCarDobo && !isCarBake && !isValidCarNumber(carNumber)
+        ) {
           if (roomNumber) {
             errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 차량 번호 형식이 올바르지 않습니다.`);
           } else if (isSpecialPlatform) {
@@ -417,8 +423,11 @@
           }
           hasError = true;
         }
+
         // W3: '차량:도보' 또는 '차량:밖에주차'
-        if (carData && (carNumber === '도보' || carNumber === '밖에주차')) {
+        if (
+          carData && (isCarDobo || isCarBake)
+        ) {
           if (roomNumber) {
             errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           } else if (isSpecialPlatform) {
@@ -428,8 +437,9 @@
           }
           hasError = true;
         }
+
         // W5: 도보만 단독 존재
-        if (!carData && partsContain(parts, '도보')) {
+        if (!carData && hasDobo) {
           if (roomNumber) {
             errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보 방문입니다.`);
           } else if (isSpecialPlatform) {
@@ -439,8 +449,11 @@
           }
           hasError = true;
         }
-        // W6: 한 줄에 '도보'와 '차량:XXXX'가 같이 있는 경우
-        if (carNumber && partsContain(parts, '도보')) {
+
+        // W6: 한 줄에 '도보'와 '차량:XXXX'가 같이 있는 경우 (단, 차량:도보/차량:밖에주차는 예외)
+        if (
+          hasDobo && hasCar && !isCarDobo && !isCarBake
+        ) {
           if (roomNumber) {
             errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           } else if (isSpecialPlatform) {
@@ -450,6 +463,7 @@
           }
           hasError = true;
         }
+
         // W7: 한 줄에 차량번호가 2개 이상 존재
         if (parts.filter(p=>p.startsWith('차량:')).length > 1) {
           if (roomNumber) {
