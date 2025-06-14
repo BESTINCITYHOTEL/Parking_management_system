@@ -371,25 +371,24 @@
         let carData = parts.find(part => part.startsWith('차량:')) || '';
         let carNumber = carData ? carData.replace('차량:', '') : '';
 
-        // 고객명(플랫폼) 추출: 첫 번째로 '차량:'도 아니고, 방번호(숫자)도 아닌 부분
+        // ---- data2/data3 추출 개선 ----
         let data2 = '';
-        for (let i = 0; i < parts.length; i++) {
-          if (i === 0 && /^\d+$/.test(parts[0])) continue;
-          if (parts[i].startsWith('차량:')) continue;
-          data2 = parts[i].trim();
-          break;
-        }
-        // 데이터3 추출: data2 다음에 나오는, '차량:'도 아니고, 방번호(숫자)도 아닌 부분
         let data3 = '';
+        let foundData2 = false;
         for (let i = 0; i < parts.length; i++) {
-          if (parts[i].trim() === data2) continue;
           if (i === 0 && /^\d+$/.test(parts[0])) continue;
           if (parts[i].startsWith('차량:')) continue;
-          if (parts[i].trim()) {
+          if (!foundData2 && parts[i].trim()) {
+            data2 = parts[i].trim();
+            foundData2 = true;
+            continue;
+          }
+          if (foundData2 && parts[i].trim()) {
             data3 = parts[i].trim();
             break;
           }
         }
+
         const isSpecialPlatform = PLATFORM_KEYWORDS.some(keyword => data2 && data2.includes(keyword));
         if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
         if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
