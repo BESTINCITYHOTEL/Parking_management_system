@@ -389,7 +389,7 @@
           }
         }
 
-        const isSpecialPlatform = PLATFORM_KEYWORDS.some(keyword => data2 && data2.includes(keyword));
+        const isSpecialPlatform = data2 && PLATFORM_KEYWORDS.some(keyword => data2.includes(keyword));
         if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
         if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
         parsedLines.push({roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts, line, idx});
@@ -487,13 +487,16 @@
           }
           hasError = true;
         }
-        // W2: 차량번호는 있는데 입실 호수 없음
+        // W2: 차량번호는 있는데 입실 호수 없음 (수정된 부분)
+        // D 조건: isSpecialPlatform === true, C: data2, Z: data2 + data3
         if (carNumber && !roomNumber) {
           if ((carData === '차량:도보' || carData === '차량:밖에주차')) {
-            // D 조건 만족: 차량:도보/차량:밖에주차 && 입실 호수 없음
-            errors.push(`[입력된 정보] '${nameField}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
+            if (isSpecialPlatform) {
+              errors.push(`[입력된 정보] '${data2}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
+            } else {
+              errors.push(`[입력된 정보] '${[data2, data3].filter(Boolean).join(' ').trim()}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
+            }
           } else {
-            // D 조건 불만족(기존대로)
             errors.push(`[입력된 정보] 차량번호:${carNumber} 차량은 아직 체크인하지 않았습니다.(객실 미배정)`);
           }
           hasError = true;
