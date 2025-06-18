@@ -345,7 +345,7 @@
       return parts.some(p => p === keyword || p.includes(keyword));
     }
 
-    // [수정] 13칸 파싱 헬퍼 함수 추가
+    // 13칸 파싱 헬퍼 함수
     function parseLine13(line) {
       // 탭 split 우선
       let parts = line.split('\t');
@@ -360,7 +360,7 @@
       return parts;
     }
 
-    // [2] 붙여넣기 데이터 파싱 및 1차 검증 (파싱 원칙대로)
+    // 붙여넣기 데이터 파싱 및 1차 검증
     function parseAndValidateData(text) {
       const lines = text.trim().split('\n');
       const validData = [];
@@ -374,15 +374,19 @@
       const parsedLines = [];
 
       lines.forEach((line, idx) => {
-        // [수정] 칸수에 맞는 파싱 사용
+        // 칸수에 맞는 파싱 사용
         const parts = parseLine13(line);
+
+        // 차량: 모두 추출 (다수 차량 번호 처리)
+        const carDataList = parts.filter(part => part.startsWith('차량:'));
+        const carNumbers = carDataList.map(c => c.replace('차량:', ''));
 
         // 첫 번째 칸: 입실 호수
         const roomNumber = parts[0] ? parts[0].trim() : "";
 
-        // 차량번호(차량:) 추출
-        const carData = parts.find(part => part.startsWith('차량:')) || '';
-        const carNumber = carData ? carData.replace('차량:', '') : '';
+        // 기존 방식 대비 carData/carNumber도 유지 (첫번째 차량만)
+        const carData = carDataList.length > 0 ? carDataList[0] : '';
+        const carNumber = carNumbers.length > 0 ? carNumbers[0] : '';
 
         // [C, Z] 용: 두 번째/세 번째 칸만 사용, 공백 보존
         const data2 = parts[1] !== undefined ? parts[1].trim() : "";
@@ -391,18 +395,19 @@
         // D조건: 플랫폼 키워드 체크는 오직 data2만
         const isSpecialPlatform = !!data2 && PLATFORM_KEYWORDS.some(keyword => data2.includes(keyword));
 
+        // 중복 체크용 (여전히 첫번째 차량만 사용)
         if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
         if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
-        parsedLines.push({roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts, line, idx});
+        parsedLines.push({roomNumber, carNumber, carData, carDataList, carNumbers, data2, data3, isSpecialPlatform, parts, line, idx});
       });
 
       parsedLines.forEach((item) => {
-        const {roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts} = item;
+        const {roomNumber, carNumber, carData, carDataList, carNumbers, data2, data3, isSpecialPlatform, parts} = item;
         let hasError = false;
         // nameField 등 추측 금지: 반드시 data2, data3만
         const nameField = [data2, data3].filter(Boolean).join(' ').trim();
         const hasDobo = partsContain(parts, '도보');
-        const hasCar = !!carData;
+        const hasCar = carDataList.length > 0;
         const isCarDobo = carData === '차량:도보';
         const isCarBake = carData === '차량:밖에주차';
 
@@ -412,19 +417,21 @@
           hasError = true;
         }
 
-        // W1: 차량번호 형식 오류 (차량:도보/차량:밖에주차는 예외)
-        if (
-          carNumber && !isCarDobo && !isCarBake && !isValidCarNumber(carNumber)
-        ) {
-          if (roomNumber) {
-            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 차량 번호 형식이 올바르지 않습니다.`);
-          } else if (isSpecialPlatform) {
-            errors.push(`[입력된 정보] '${data2}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
-          } else {
-            errors.push(`[입력된 정보] '${nameField}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+        // W1: 차량번호 형식 오류 (차량:도보/차량:밖에주차는 예외, 여러 차량 모두 검사)
+        carNumbers.forEach(carNum => {
+          if (
+            carNum && carNum !== '도보' && carNum !== '밖에주차' && !isValidCarNumber(carNum)
+          ) {
+            if (roomNumber) {
+              errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 차량 번호 형식이 올바르지 않습니다.`);
+            } else if (isSpecialPlatform) {
+              errors.push(`[입력된 정보] '${data2}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+            } else {
+              errors.push(`[입력된 정보] '${nameField}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+            }
+            hasError = true;
           }
-          hasError = true;
-        }
+        });
 
         // W3: '차량:도보' 또는 '차량:밖에주차'
         if (
@@ -467,7 +474,7 @@
         }
 
         // W7: 한 줄에 차량번호가 2개 이상 존재
-        if (parts.filter(p=>p.startsWith('차량:')).length > 1) {
+        if (carDataList.length > 1) {
           if (roomNumber) {
             errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호에 차량 번호가 여러 개 존재합니다.`);
           } else if (isSpecialPlatform) {
@@ -512,7 +519,7 @@
           errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호의 주차 정보가 누락되었습니다.`);
           hasError = true;
         }
-        // W9: 붙여넣기 내 차량번호 중복
+        // W9: 붙여넣기 내 차량번호 중복 (여전히 첫번째 차량 기준)
         if (carNumber && carDupMap.get(carNumber) > 1) {
           errors.push(`[입력된 정보] 차량번호:${carNumber}가 중복됩니다.`);
           hasError = true;
@@ -532,7 +539,6 @@
       return { validData, errors };
     }
 
-    // ... (이하 기존 전체 코드 동일)
     // W8, W11, W12, W13 시스템-붙여넣기 데이터 비교 및 previewData 생성
     function generatePreviewAndErrors(validData, parkingRecords, errors = []) {
       const previewData = [];
