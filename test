@@ -329,11 +329,12 @@
       document.getElementById("status").innerText = `현재 주차된 차량: ${occupiedCount}대 / 남은 자리: ${availableCount}대`;
     }
 
+    // [1] 입실 호수 유효성 검사: 허용된 범위만 허용 (공백은 미방문)
     function isValidRoomNumber(room) {
-      const roomNum = parseInt(room);
-      return VALID_ROOM_RANGES.some(([min, max]) => 
-        roomNum >= min && roomNum <= max
-      );
+      if (room === "" || room === undefined) return true;
+      const roomNum = parseInt(room, 10);
+      if (isNaN(roomNum)) return false;
+      return VALID_ROOM_RANGES.some(([min, max]) => roomNum >= min && roomNum <= max);
     }
 
     function isValidCarNumber(car) {
@@ -344,7 +345,22 @@
       return parts.some(p => p === keyword || p.includes(keyword));
     }
 
-    // 붙여넣기 데이터 파싱 및 1차 검증 (P/W 규칙)
+    // [수정] 13칸 파싱 헬퍼 함수 추가
+    function parseLine13(line) {
+      // 탭 split 우선
+      let parts = line.split('\t');
+      if (parts.length === 1) {
+        // 탭 없으면 2개 이상 연속 공백 split
+        parts = line.split(/ {2,}/);
+      }
+      if (parts.length === 12) {
+        // 12칸이면 맨 앞에 빈칸 추가
+        parts.unshift("");
+      }
+      return parts;
+    }
+
+    // [2] 붙여넣기 데이터 파싱 및 1차 검증 (파싱 원칙대로)
     function parseAndValidateData(text) {
       const lines = text.trim().split('\n');
       const validData = [];
@@ -358,38 +374,23 @@
       const parsedLines = [];
 
       lines.forEach((line, idx) => {
-        // 탭 또는 공백 여러 개를 모두 구분자로 인식
-        const parts = line.split(/\s+/);
+        // [수정] 칸수에 맞는 파싱 사용
+        const parts = parseLine13(line);
 
-        // 방 번호(입실 호수) 파싱: 첫 번째 컬럼이 숫자(정수)일 때만 roomNumber로 인식
-        let roomNumber = '';
-        if (parts[0] && /^\d+$/.test(parts[0])) {
-          roomNumber = parts[0];
-        }
+        // 첫 번째 칸: 입실 호수
+        const roomNumber = parts[0] ? parts[0].trim() : "";
 
         // 차량번호(차량:) 추출
-        let carData = parts.find(part => part.startsWith('차량:')) || '';
-        let carNumber = carData ? carData.replace('차량:', '') : '';
+        const carData = parts.find(part => part.startsWith('차량:')) || '';
+        const carNumber = carData ? carData.replace('차량:', '') : '';
 
-        // ---- data2/data3 추출 개선 ----
-        let data2 = '';
-        let data3 = '';
-        let foundData2 = false;
-        for (let i = 0; i < parts.length; i++) {
-          if (i === 0 && /^\d+$/.test(parts[0])) continue;
-          if (parts[i].startsWith('차량:')) continue;
-          if (!foundData2 && parts[i].trim()) {
-            data2 = parts[i].trim();
-            foundData2 = true;
-            continue;
-          }
-          if (foundData2 && parts[i].trim()) {
-            data3 = parts[i].trim();
-            break;
-          }
-        }
+        // [C, Z] 용: 두 번째/세 번째 칸만 사용, 공백 보존
+        const data2 = parts[1] !== undefined ? parts[1].trim() : "";
+        const data3 = parts[2] !== undefined ? parts[2].trim() : "";
 
-        const isSpecialPlatform = data2 && PLATFORM_KEYWORDS.some(keyword => data2.includes(keyword));
+        // D조건: 플랫폼 키워드 체크는 오직 data2만
+        const isSpecialPlatform = !!data2 && PLATFORM_KEYWORDS.some(keyword => data2.includes(keyword));
+
         if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
         if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
         parsedLines.push({roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts, line, idx});
@@ -398,6 +399,7 @@
       parsedLines.forEach((item) => {
         const {roomNumber, carNumber, carData, data2, data3, isSpecialPlatform, parts} = item;
         let hasError = false;
+        // nameField 등 추측 금지: 반드시 data2, data3만
         const nameField = [data2, data3].filter(Boolean).join(' ').trim();
         const hasDobo = partsContain(parts, '도보');
         const hasCar = !!carData;
@@ -526,6 +528,7 @@
       return { validData, errors };
     }
 
+    // ... (이하 기존 전체 코드 동일)
     // W8, W11, W12, W13 시스템-붙여넣기 데이터 비교 및 previewData 생성
     function generatePreviewAndErrors(validData, parkingRecords, errors = []) {
       const previewData = [];
