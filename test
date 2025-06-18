@@ -503,8 +503,12 @@
           }
           hasError = true;
         }
-        // W16: 입실 호수는 있는데 차량 정보 누락
-        if (roomNumber && (!carNumber || carNumber === '-' || carNumber === '차량')) {
+        // W16: 입실 호수는 있는데 차량 정보 누락 (단, 도보 방문은 예외)
+        if (
+          roomNumber &&
+          (!carNumber || carNumber === '-' || carNumber === '차량') &&
+          !hasDobo // 도보 방문이면 경고 X
+        ) {
           errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호의 주차 정보가 누락되었습니다.`);
           hasError = true;
         }
