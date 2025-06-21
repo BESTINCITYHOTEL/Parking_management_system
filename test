@@ -362,6 +362,8 @@
 
     // 붙여넣기 데이터 파싱 및 1차 검증
     function parseAndValidateData(text) {
+      // [추가] 붙여넣기에 등장하는 모든 차량번호를 저장할 Set
+      const allPasteCarNumbers = new Set();
       const lines = text.trim().split('\n');
       const validData = [];
       const errors = [];
@@ -380,6 +382,10 @@
         // 차량: 모두 추출 (다수 차량 번호 처리)
         const carDataList = parts.filter(part => part.startsWith('차량:'));
         const carNumbers = carDataList.map(c => c.replace('차량:', ''));
+        // [추가] 모든 차량번호를 Set에 추가
+    	carNumbers.forEach(num => {
+     	 if (num) allPasteCarNumbers.add(num);
+  	 	});
 
         // 첫 번째 칸: 입실 호수
         const roomNumber = parts[0] ? parts[0].trim() : "";
@@ -536,11 +542,11 @@
         }
       });
 
-      return { validData, errors };
+      return { validData, errors, allPasteCarNumbers };
     }
 
     // W8, W11, W12, W13 시스템-붙여넣기 데이터 비교 및 previewData 생성
-    function generatePreviewAndErrors(validData, parkingRecords, errors = []) {
+    function generatePreviewAndErrors(validData, parkingRecords, errors = [], allPasteCarNumbers = new Set()) {
       const previewData = [];
       // 시스템 데이터: 차량번호/호실 중복 체크용
       const systemCarMap = new Map();
@@ -599,10 +605,10 @@
         if (count > 1) errors.push(`[시스템 정보] 입실 호수 ${room}호가 중복됩니다.`);
       }
       // W13: 시스템에는 있는데 붙여넣기에 없는 경우(미등록)
-      const pasteCarSet = new Set(validData.map(d=>d.carNumber));
+      // const pasteCarSet = new Set(validData.map(d=>d.carNumber)); // 삭제 또는 주석
       const pasteRoomSet = new Set(validData.map(d=>d.roomNumber));
       Object.entries(parkingRecords).forEach(([slot, rec]) => {
-        if (rec.car && !pasteCarSet.has(rec.car)) {
+        if (rec.car && !allPasteCarNumbers.has(rec.car)) {
           errors.push(`[시스템 정보] 차량번호:${rec.car}의 차량은 주차 미등록 차량입니다.(외부 차량일 수 있습니다.)`);
         }
         if (rec.room && !pasteRoomSet.has(rec.room)) {
@@ -729,9 +735,9 @@
     async function handlePaste() {
       try {
         const text = await navigator.clipboard.readText();
-        const { validData, errors } = parseAndValidateData(text);
+        const { validData, errors, allPasteCarNumbers } = parseAndValidateData(text);
         // W8, W11~W13까지 반영
-        const { previewData: newPreviewData, errors: allErr } = generatePreviewAndErrors(validData, parkingRecords, errors);
+        const { previewData: newPreviewData, errors: allErr } = generatePreviewAndErrors(validData, parkingRecords, errors, allPasteCarNumbers);
         updateDataArr = validData;
         previewData = newPreviewData;
         // --- 중복 메시지 필터링 적용 ---
