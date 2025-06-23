@@ -269,10 +269,6 @@
     </div>
   </div>
   <script>
-    // =========================
-    // 1. Firebase 설정
-    // =========================
-    // 아래의 firebaseConfig를 본인 프로젝트의 값으로 바꿔주세요!
     const firebaseConfig = {
       apiKey: "AIzaSyCU6-7mf38_E026iIYgJtlAbnNaSVe7rmM",
       authDomain: "parking-management-syste-64f15.firebaseapp.com",
@@ -285,9 +281,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // =========================
-    // 2. 본문 코드
-    // =========================
     const TOTAL_SPOTS = 108;
     const DEFAULT_ACTIVE_SPOTS = [
       1, 8, 15, 22, 26, 29, 37, 42, 43, 48,
@@ -316,7 +309,6 @@
     let redoStack = [];
     let firebaseReady = false;
 
-    // 데이터 로딩 및 실시간 반영
     function loadFirebaseData() {
       db.ref('activeSpots').once('value').then(snapshot => {
         activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
@@ -329,7 +321,7 @@
         createParkingLot();
       });
     }
-    // 실시간 동기화
+
     db.ref('activeSpots').on('value', snapshot => {
       activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
       createParkingLot();
@@ -408,7 +400,7 @@
       }
       return parts;
     }
-    // 붙여넣기 데이터 파싱 및 1차 검증
+
     function parseAndValidateData(text) {
       const allPasteCarNumbers = new Set();
       const allPasteRoomNumbers = new Set();
