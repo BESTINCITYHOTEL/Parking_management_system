@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>주차 관리 시스템 (Firebase V11)</title>
+  <title>주차 관리 시스템</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -269,10 +269,6 @@
     </div>
   </div>
   <script>
-    // =========================
-    // 1. Firebase 설정
-    // =========================
-    // 아래의 firebaseConfig를 본인 프로젝트의 값으로 바꿔주세요!
     const firebaseConfig = {
       apiKey: "AIzaSyCU6-7mf38_E026iIYgJtlAbnNaSVe7rmM",
       authDomain: "parking-management-syste-64f15.firebaseapp.com",
@@ -285,9 +281,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // =========================
-    // 2. 본문 코드
-    // =========================
     const TOTAL_SPOTS = 108;
     const DEFAULT_ACTIVE_SPOTS = [
       1, 8, 15, 22, 26, 29, 37, 42, 43, 48,
@@ -316,7 +309,6 @@
     let redoStack = [];
     let firebaseReady = false;
 
-    // 데이터 로딩 및 실시간 반영
     function loadFirebaseData() {
       db.ref('activeSpots').once('value').then(snapshot => {
         activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
@@ -329,7 +321,7 @@
         createParkingLot();
       });
     }
-    // 실시간 동기화
+
     db.ref('activeSpots').on('value', snapshot => {
       activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
       createParkingLot();
@@ -408,7 +400,7 @@
       }
       return parts;
     }
-    // 붙여넣기 데이터 파싱 및 1차 검증
+
     function parseAndValidateData(text) {
       const allPasteCarNumbers = new Set();
       const allPasteRoomNumbers = new Set();
@@ -456,9 +448,9 @@
             if (roomNumber) {
               errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호 차량 번호 형식이 올바르지 않습니다.`);
             } else if (isSpecialPlatform) {
-              errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+              errors.push(`[${lineNo}행] [입력된 정보] ${data2} 고객님의 차량 번호 형식이 올바르지 않습니다.`);
             } else {
-              errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+              errors.push(`[${lineNo}행] [입력된 정보] ${nameField} 고객님의 차량 번호 형식이 올바르지 않습니다.`);
             }
             hasError = true;
           }
@@ -469,9 +461,9 @@
           if (roomNumber) {
             errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호는 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${data2} 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           } else {
-            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${nameField} 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           }
           hasError = true;
         }
@@ -479,9 +471,9 @@
           if (roomNumber) {
             errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보 방문입니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 도보 방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${data2} 고객님은 도보 방문입니다.`);
           } else {
-            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 도보 방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${nameField} 고객님은 도보 방문입니다.`);
           }
           hasError = true;
         }
@@ -491,9 +483,9 @@
           if (roomNumber) {
             errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${data2} 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           } else {
-            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${nameField} 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           }
           hasError = true;
         }
@@ -508,9 +500,9 @@
           if (roomNumber) {
             errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호에 차량 번호가 여러 개 존재합니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 차량 번호가 여러 개 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${data2} 고객님은 차량 번호가 여러 개 존재합니다.`);
           } else {
-            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 차량 번호가 여러 개 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${nameField} 고객님은 차량 번호가 여러 개 존재합니다.`);
           }
           hasError = true;
         }
@@ -519,18 +511,18 @@
           (parts.includes('차량') || parts.includes('-'))
         ) {
           if (isSpecialPlatform) {
-            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 아직 미방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${data2} 고객님은 아직 미방문입니다.`);
           } else {
-            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 아직 미방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] ${nameField} 고객님은 아직 미방문입니다.`);
           }
           hasError = true;
         }
         if (carNumber && !roomNumber) {
           if ((carData === '차량:도보' || carData === '차량:밖에주차')) {
             if (isSpecialPlatform) {
-              errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
+              errors.push(`[${lineNo}행] [입력된 정보] ${data2} 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
             } else {
-              errors.push(`[${lineNo}행] [입력된 정보] '${[data2, data3].filter(Boolean).join(' ').trim()}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
+              errors.push(`[${lineNo}행] [입력된 정보] ${[data2, data3].filter(Boolean).join(' ').trim()} 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
             }
           }
           hasError = true;
