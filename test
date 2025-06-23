@@ -251,6 +251,8 @@
 <body>
   <h2>주차 관리 시스템</h2>
   <div class="top-buttons">
+    <button id="undoBtn">↩️</button>
+    <button id="redoBtn">↪️</button>
     <button id="clearAllBtn">🧹</button>
     <button id="editModeBtn">🚗</button>
     <button id="pasteIcon">📋</button>
@@ -322,6 +324,48 @@
     let updateDataArr = [];
     let previewData = [];
     let allErrors = [];
+
+    // Undo/Redo stacks
+    let historyStack = [];
+    let redoStack = [];
+
+    function saveHistory() {
+      historyStack.push({
+        parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
+        activeSpots: JSON.parse(JSON.stringify(activeSpots))
+      });
+      redoStack = [];
+    }
+
+    function undo() {
+      if (historyStack.length > 0) {
+        redoStack.push({
+          parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
+          activeSpots: JSON.parse(JSON.stringify(activeSpots))
+        });
+        const prev = historyStack.pop();
+        parkingRecords = prev.parkingRecords;
+        activeSpots = prev.activeSpots;
+        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
+        createParkingLot();
+      }
+    }
+
+    function redo() {
+      if (redoStack.length > 0) {
+        historyStack.push({
+          parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
+          activeSpots: JSON.parse(JSON.stringify(activeSpots))
+        });
+        const next = redoStack.pop();
+        parkingRecords = next.parkingRecords;
+        activeSpots = next.activeSpots;
+        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
+        createParkingLot();
+      }
+    }
 
     function updateStatus() {
       const occupiedCount = Object.keys(parkingRecords).length;
@@ -402,9 +446,10 @@
         const hasCar = carDataList.length > 0;
         const isCarDobo = carData === '차량:도보';
         const isCarBake = carData === '차량:밖에주차';
+        const lineNo = item.idx + 1;
 
         if (roomNumber && !isValidRoomNumber(roomNumber)) {
-          errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
+          errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
           hasError = true;
         }
 
@@ -413,11 +458,11 @@
             carNum && carNum !== '도보' && carNum !== '밖에주차' && !isValidCarNumber(carNum)
           ) {
             if (roomNumber) {
-              errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 차량 번호 형식이 올바르지 않습니다.`);
+              errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호 차량 번호 형식이 올바르지 않습니다.`);
             } else if (isSpecialPlatform) {
-              errors.push(`[입력된 정보] '${data2}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+              errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
             } else {
-              errors.push(`[입력된 정보] '${nameField}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
+              errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님의 차량 번호 형식이 올바르지 않습니다.`);
             }
             hasError = true;
           }
@@ -427,22 +472,22 @@
           carData && (isCarDobo || isCarBake)
         ) {
           if (roomNumber) {
-            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호는 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호는 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[입력된 정보] '${data2}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           } else {
-            errors.push(`[입력된 정보] '${nameField}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 차량 예약이지만 ${carNumber === '도보' ? '도보 방문' : '밖에 주차 고객'}입니다.`);
           }
           hasError = true;
         }
 
         if (!carData && hasDobo) {
           if (roomNumber) {
-            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보 방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보 방문입니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[입력된 정보] '${data2}' 고객님은 도보 방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 도보 방문입니다.`);
           } else {
-            errors.push(`[입력된 정보] '${nameField}' 고객님은 도보 방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 도보 방문입니다.`);
           }
           hasError = true;
         }
@@ -451,11 +496,11 @@
           hasDobo && hasCar && !isCarDobo && !isCarBake
         ) {
           if (roomNumber) {
-            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[입력된 정보] '${data2}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           } else {
-            errors.push(`[입력된 정보] '${nameField}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 도보와 차량 정보가 같이 존재합니다.`);
           }
           hasError = true;
         }
@@ -465,18 +510,18 @@
           if (
             carNum && !roomNumber && carNum !== '도보' && carNum !== '밖에주차'
           ) {
-            errors.push(`[입력된 정보] 차량번호:${carNum} 차량은 아직 체크인하지 않았습니다.(객실 미배정)`);
+            errors.push(`[${lineNo}행] [입력된 정보] 차량번호:${carNum} 차량은 아직 체크인하지 않았습니다.(객실 미배정)`);
           }
         });
 
         // 차량번호 여러 개 (W7)
         if (carDataList.length > 1) {
           if (roomNumber) {
-            errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호에 차량 번호가 여러 개 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호에 차량 번호가 여러 개 존재합니다.`);
           } else if (isSpecialPlatform) {
-            errors.push(`[입력된 정보] '${data2}' 고객님은 차량 번호가 여러 개 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 차량 번호가 여러 개 존재합니다.`);
           } else {
-            errors.push(`[입력된 정보] '${nameField}' 고객님은 차량 번호가 여러 개 존재합니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 차량 번호가 여러 개 존재합니다.`);
           }
           hasError = true;
         }
@@ -486,18 +531,18 @@
           (parts.includes('차량') || parts.includes('-'))
         ) {
           if (isSpecialPlatform) {
-            errors.push(`[입력된 정보] '${data2}' 고객님은 아직 미방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 아직 미방문입니다.`);
           } else {
-            errors.push(`[입력된 정보] '${nameField}' 고객님은 아직 미방문입니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] '${nameField}' 고객님은 아직 미방문입니다.`);
           }
           hasError = true;
         }
         if (carNumber && !roomNumber) {
           if ((carData === '차량:도보' || carData === '차량:밖에주차')) {
             if (isSpecialPlatform) {
-              errors.push(`[입력된 정보] '${data2}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
+              errors.push(`[${lineNo}행] [입력된 정보] '${data2}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
             } else {
-              errors.push(`[입력된 정보] '${[data2, data3].filter(Boolean).join(' ').trim()}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
+              errors.push(`[${lineNo}행] [입력된 정보] '${[data2, data3].filter(Boolean).join(' ').trim()}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
             }
           } else {
             // 이미 위에서 carNumbers.forEach에서 체크
@@ -509,18 +554,18 @@
           (!carNumber || carNumber === '-' || carNumber === '차량') &&
           !hasDobo
         ) {
-          errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호의 주차 정보가 누락되었습니다.`);
+          errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호의 주차 정보가 누락되었습니다.`);
           hasError = true;
         }
         // 중복 오류: 도보/밖에주차는 완전히 무시
         if (carNumber && carDupMap.get(carNumber) > 1) {
           if (carNumber !== "도보" && carNumber !== "밖에주차") {
-            errors.push(`[입력된 정보] 차량번호:${carNumber}가 중복됩니다.`);
+            errors.push(`[${lineNo}행] [입력된 정보] 차량번호:${carNumber}가 중복됩니다.`);
             hasError = true;
           }
         }
         if (roomNumber && roomDupMap.get(roomNumber) > 1) {
-          errors.push(`[입력된 정보] 입실 호수 ${roomNumber}호가 중복됩니다.`);
+          errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호가 중복됩니다.`);
           hasError = true;
         }
         if (hasError) return;
@@ -645,6 +690,7 @@
       carInput.value = parkingRecords[slot]?.car || "";
 
       document.getElementById("submitBtn").onclick = () => {
+        saveHistory();
         const room = roomInput.value;
         const car = carInput.value;
         parkingRecords[slot] = { room, car };
@@ -658,6 +704,7 @@
       };
 
       document.getElementById("removeBtn").onclick = () => {
+        saveHistory();
         delete parkingRecords[slot];
         const spotElement = document.getElementById(`spot-${slot}`);
         spotElement.classList.remove("occupied");
@@ -681,6 +728,7 @@
     }
 
     function resetToDefaultSpots() {
+      saveHistory();
       activeSpots = [...DEFAULT_ACTIVE_SPOTS];
       parkingRecords = {};
       localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
@@ -691,6 +739,7 @@
     function toggleParking(slot) {
       if (modalOpen) return;
       if (isEditMode) {
+        saveHistory();
         const index = activeSpots.indexOf(slot);
         if (index === -1) {
           activeSpots.push(slot);
@@ -775,6 +824,7 @@
     }
 
     function applyUpdate() {
+      saveHistory();
       let updateCount = 0;
 
       previewData.forEach(item => {
@@ -831,6 +881,7 @@
       document.getElementById('editModeBtn').onclick = toggleEditMode;
       document.getElementById('resetToDefaultBtn').onclick = resetToDefaultSpots;
       document.getElementById('clearAllBtn').onclick = () => {
+        saveHistory();
         parkingRecords = {};
         localStorage.setItem('parkingRecords', JSON.stringify(parkingRecords));
         createParkingLot();
@@ -840,6 +891,9 @@
       document.getElementById('cancelUpdateBtn').onclick = () => {
         document.getElementById('previewModal').style.display = 'none';
       };
+
+      document.getElementById('undoBtn').onclick = undo;
+      document.getElementById('redoBtn').onclick = redo;
 
       createParkingLot();
     });
