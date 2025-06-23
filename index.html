@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>주차 관리 시스템</title>
+  <title>주차 관리 시스템 (Firebase V11)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,7 +11,6 @@
       margin: 0;
       padding: 0;
     }
-
     .top-buttons {
       display: flex;
       justify-content: center;
@@ -19,14 +18,12 @@
       gap: 10px;
       margin-bottom: 10px;
     }
-
     .top-buttons button {
       font-size: 22px;
       background: none;
       border: none;
       cursor: pointer;
     }
-
     .parking-container {
       position: relative;
       width: 100%;
@@ -40,7 +37,6 @@
       background: url('도면이미지.png') no-repeat center center;
       background-size: cover;
     }
-
     .spot {
       width: 100%;
       height: 100%;
@@ -62,28 +58,23 @@
       white-space: nowrap;
       position: relative;
     }
-
     .occupied {
       background-color: red;
     }
-
     .empty {
       background: none;
       pointer-events: none;
       border: 1px solid transparent;
     }
-
     .edit-mode .empty {
       background-color: #444;
       pointer-events: auto;
     }
-
     .edit-mode .empty::before {
       content: '+';
       color: white;
       font-size: 20px;
     }
-
     .edit-mode .spot.active:not(.occupied)::after {
       content: '-';
       position: absolute;
@@ -92,15 +83,12 @@
       font-size: 16px;
       color: white;
     }
-
     .border-top {
       border-top: 3px solid black;
     }
-
     .border-bottom {
       border-bottom: 3px solid black;
     }
-
     .modal {
       display: none;
       position: fixed;
@@ -116,7 +104,6 @@
       max-width: 450px;
       box-sizing: border-box;
     }
-
     .modal input {
       width: 100%;
       padding: 15px;
@@ -126,14 +113,12 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-
     .modal-buttons {
       display: flex;
       justify-content: space-between;
       gap: 10px;
       margin-top: 10px;
     }
-
     .modal-buttons button {
       flex: 1;
       padding: 12px;
@@ -143,19 +128,15 @@
       color: white;
       box-sizing: border-box;
     }
-
     .modal-buttons .remove {
       background-color: orange;
     }
-
     .modal-buttons .cancel {
       background-color: red;
     }
-
     .modal-buttons #submitBtn {
       background-color: green;
     }
-
     .preview-modal {
       display: none;
       position: fixed;
@@ -172,34 +153,28 @@
       max-height: 80vh;
       overflow-y: auto;
     }
-
     .preview-table {
       width: 100%;
       border-collapse: collapse;
       margin: 10px 0;
     }
-
     .preview-table th, .preview-table td {
       border: 1px solid #ddd;
       padding: 8px;
       text-align: center;
     }
-
     .preview-table th {
       background-color: #444;
     }
-
     .preview-table tr:nth-child(even) {
       background-color: rgba(255, 255, 255, 0.1);
     }
-
     .preview-summary {
       margin: 10px 0;
       padding: 10px;
       background-color: rgba(255, 255, 255, 0.1);
       border-radius: 5px;
     }
-
     .error-list {
       background-color: rgba(255, 0, 0, 0.1);
       padding: 10px;
@@ -208,7 +183,6 @@
       max-height: 200px;
       overflow-y: auto;
     }
-
     .error-list details summary {
       cursor: pointer;
       font-weight: bold;
@@ -220,36 +194,35 @@
     .error-list details {
       margin-bottom: 4px;
     }
-
     @media (max-width: 600px) {
       .parking-container {
         height: 400px;
       }
-
       .spot {
         font-size: 10px;
         padding: 3px;
       }
-
       .modal {
         width: 95%;
         padding: 20px;
       }
-
       .modal input {
         padding: 12px;
         font-size: 14px;
       }
-
       .modal-buttons button {
         padding: 10px;
         font-size: 14px;
       }
     }
   </style>
+  <!-- Firebase App (core) -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <!-- Firebase Database -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h2>주차 관리 시스템</h2>
+  <h2>주차 관리 시스템 (Firebase V11)</h2>
   <div class="top-buttons">
     <button id="undoBtn">↩️</button>
     <button id="redoBtn">↪️</button>
@@ -259,9 +232,7 @@
     <button id="resetToDefaultBtn" style="display:none">🔄</button>
   </div>
   <p id="status">현재 주차된 차량: 0대 / 남은 자리: 39대</p>
-
   <div class="parking-container" id="parkingLot"></div>
-
   <div id="modal" class="modal">
     <h3>주차 정보 수정</h3>
     <input type="text" id="room" placeholder="입실 호수" inputmode="numeric" />
@@ -272,7 +243,6 @@
       <button class="cancel" id="cancelBtn">취소</button>
     </div>
   </div>
-
   <div id="previewModal" class="preview-modal">
     <h3>데이터 업데이트 미리보기</h3>
     <div class="preview-summary">
@@ -298,8 +268,26 @@
       <button id="cancelUpdateBtn" class="cancel">취소</button>
     </div>
   </div>
-
   <script>
+    // =========================
+    // 1. Firebase 설정
+    // =========================
+    // 아래의 firebaseConfig를 본인 프로젝트의 값으로 바꿔주세요!
+    const firebaseConfig = {
+      apiKey: "AIzaSyCU6-7mf38_E026iIYgJtlAbnNaSVe7rmM",
+      authDomain: "parking-management-syste-64f15.firebaseapp.com",
+      projectId: "parking-management-syste-64f15",
+      storageBucket: "parking-management-syste-64f15.firebasestorage.app",
+      messagingSenderId: "767840329602",
+      appId: "1:767840329602:web:2631eb2b2efafee6dcf99b",
+      measurementId: "G-ZFKFS8Y7N7"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // =========================
+    // 2. 본문 코드
+    // =========================
     const TOTAL_SPOTS = 108;
     const DEFAULT_ACTIVE_SPOTS = [
       1, 8, 15, 22, 26, 29, 37, 42, 43, 48,
@@ -316,18 +304,47 @@
       [701, 714]
     ];
 
-    let parkingRecords = JSON.parse(localStorage.getItem("parkingRecords") || "{}");
-    let activeSpots = JSON.parse(localStorage.getItem("activeSpots") || JSON.stringify(DEFAULT_ACTIVE_SPOTS));
+    let parkingRecords = {};
+    let activeSpots = [];
     let isEditMode = false;
     let modalOpen = false;
     let currentSlot = null;
     let updateDataArr = [];
     let previewData = [];
     let allErrors = [];
-
-    // Undo/Redo stacks
     let historyStack = [];
     let redoStack = [];
+    let firebaseReady = false;
+
+    // 데이터 로딩 및 실시간 반영
+    function loadFirebaseData() {
+      db.ref('activeSpots').once('value').then(snapshot => {
+        activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
+        firebaseReady = true;
+        createParkingLot();
+      });
+      db.ref('parkingRecords').once('value').then(snapshot => {
+        parkingRecords = snapshot.val() || {};
+        firebaseReady = true;
+        createParkingLot();
+      });
+    }
+    // 실시간 동기화
+    db.ref('activeSpots').on('value', snapshot => {
+      activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
+      createParkingLot();
+    });
+    db.ref('parkingRecords').on('value', snapshot => {
+      parkingRecords = snapshot.val() || {};
+      createParkingLot();
+    });
+
+    function saveParkingRecords() {
+      db.ref('parkingRecords').set(parkingRecords);
+    }
+    function saveActiveSpots() {
+      db.ref('activeSpots').set(activeSpots);
+    }
 
     function saveHistory() {
       historyStack.push({
@@ -336,7 +353,6 @@
       });
       redoStack = [];
     }
-
     function undo() {
       if (historyStack.length > 0) {
         redoStack.push({
@@ -346,12 +362,11 @@
         const prev = historyStack.pop();
         parkingRecords = prev.parkingRecords;
         activeSpots = prev.activeSpots;
-        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
-        localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
+        saveParkingRecords();
+        saveActiveSpots();
         createParkingLot();
       }
     }
-
     function redo() {
       if (redoStack.length > 0) {
         historyStack.push({
@@ -361,33 +376,28 @@
         const next = redoStack.pop();
         parkingRecords = next.parkingRecords;
         activeSpots = next.activeSpots;
-        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
-        localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
+        saveParkingRecords();
+        saveActiveSpots();
         createParkingLot();
       }
     }
-
     function updateStatus() {
       const occupiedCount = Object.keys(parkingRecords).length;
       const availableCount = activeSpots.length - occupiedCount;
       document.getElementById("status").innerText = `현재 주차된 차량: ${occupiedCount}대 / 남은 자리: ${availableCount}대`;
     }
-
     function isValidRoomNumber(room) {
       if (room === "" || room === undefined) return true;
       const roomNum = parseInt(room, 10);
       if (isNaN(roomNum)) return false;
       return VALID_ROOM_RANGES.some(([min, max]) => roomNum >= min && roomNum <= max);
     }
-
     function isValidCarNumber(car) {
       return /^\d{4}$/.test(car);
     }
-
     function partsContain(parts, keyword) {
       return parts.some(p => p === keyword || p.includes(keyword));
     }
-
     function parseLine13(line) {
       let parts = line.split('\t');
       if (parts.length === 1) {
@@ -398,46 +408,34 @@
       }
       return parts;
     }
-
-    // === 붙여넣기 데이터 파싱 및 1차 검증 ===
+    // 붙여넣기 데이터 파싱 및 1차 검증
     function parseAndValidateData(text) {
       const allPasteCarNumbers = new Set();
       const allPasteRoomNumbers = new Set();
       const lines = text.trim().split('\n');
       const validData = [];
       const errors = [];
-
-      // 중복 체크용
       const carDupMap = new Map();
       const roomDupMap = new Map();
-
-      // 1차 파싱 및 중복 체크 준비
       const parsedLines = [];
-
       lines.forEach((line, idx) => {
         const parts = parseLine13(line);
-
-        // 차량: 모두 추출 (다수 차량 번호 처리)
         const carDataList = parts.filter(part => part.startsWith('차량:'));
         const carNumbers = carDataList.map(c => c.replace('차량:', ''));
         carNumbers.forEach(num => {
           if (num) allPasteCarNumbers.add(num);
         });
-
         const roomNumber = parts[0] ? parts[0].trim() : "";
         if (roomNumber) allPasteRoomNumbers.add(roomNumber);
-
         const carData = carDataList.length > 0 ? carDataList[0] : '';
         const carNumber = carNumbers.length > 0 ? carNumbers[0] : '';
         const data2 = parts[1] !== undefined ? parts[1].trim() : "";
         const data3 = parts[2] !== undefined ? parts[2].trim() : "";
         const isSpecialPlatform = !!data2 && PLATFORM_KEYWORDS.some(keyword => data2.includes(keyword));
-
         if (carNumber) carDupMap.set(carNumber, (carDupMap.get(carNumber)||0)+1);
         if (roomNumber) roomDupMap.set(roomNumber, (roomDupMap.get(roomNumber)||0)+1);
         parsedLines.push({roomNumber, carNumber, carData, carDataList, carNumbers, data2, data3, isSpecialPlatform, parts, line, idx});
       });
-
       parsedLines.forEach((item) => {
         const {roomNumber, carNumber, carData, carDataList, carNumbers, data2, data3, isSpecialPlatform, parts} = item;
         let hasError = false;
@@ -447,12 +445,10 @@
         const isCarDobo = carData === '차량:도보';
         const isCarBake = carData === '차량:밖에주차';
         const lineNo = item.idx + 1;
-
         if (roomNumber && !isValidRoomNumber(roomNumber)) {
           errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
           hasError = true;
         }
-
         carNumbers.forEach(carNum => {
           if (
             carNum && carNum !== '도보' && carNum !== '밖에주차' && !isValidCarNumber(carNum)
@@ -467,7 +463,6 @@
             hasError = true;
           }
         });
-
         if (
           carData && (isCarDobo || isCarBake)
         ) {
@@ -480,7 +475,6 @@
           }
           hasError = true;
         }
-
         if (!carData && hasDobo) {
           if (roomNumber) {
             errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호 고객님은 도보 방문입니다.`);
@@ -491,7 +485,6 @@
           }
           hasError = true;
         }
-
         if (
           hasDobo && hasCar && !isCarDobo && !isCarBake
         ) {
@@ -504,8 +497,6 @@
           }
           hasError = true;
         }
-
-        // W2: 객실 미배정 경고는 차량번호별로 무조건 체크 (hasError와 무관)
         carNumbers.forEach(carNum => {
           if (
             carNum && !roomNumber && carNum !== '도보' && carNum !== '밖에주차'
@@ -513,8 +504,6 @@
             errors.push(`[${lineNo}행] [입력된 정보] 차량번호:${carNum} 차량은 아직 체크인하지 않았습니다.(객실 미배정)`);
           }
         });
-
-        // 차량번호 여러 개 (W7)
         if (carDataList.length > 1) {
           if (roomNumber) {
             errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호에 차량 번호가 여러 개 존재합니다.`);
@@ -525,7 +514,6 @@
           }
           hasError = true;
         }
-
         if (
           !roomNumber &&
           (parts.includes('차량') || parts.includes('-'))
@@ -544,8 +532,6 @@
             } else {
               errors.push(`[${lineNo}행] [입력된 정보] '${[data2, data3].filter(Boolean).join(' ').trim()}' 고객님은 아직 체크인하지 않았습니다.(객실 미배정)`);
             }
-          } else {
-            // 이미 위에서 carNumbers.forEach에서 체크
           }
           hasError = true;
         }
@@ -557,7 +543,6 @@
           errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호의 주차 정보가 누락되었습니다.`);
           hasError = true;
         }
-        // 중복 오류: 도보/밖에주차는 완전히 무시
         if (carNumber && carDupMap.get(carNumber) > 1) {
           if (carNumber !== "도보" && carNumber !== "밖에주차") {
             errors.push(`[${lineNo}행] [입력된 정보] 차량번호:${carNumber}가 중복됩니다.`);
@@ -573,20 +558,16 @@
           validData.push({roomNumber, carNumber, data2, data3, isSpecialPlatform, line: item.line});
         }
       });
-
       return { validData, errors, allPasteCarNumbers, allPasteRoomNumbers };
     }
-
     function generatePreviewAndErrors(validData, parkingRecords, errors = [], allPasteCarNumbers = new Set(), allPasteRoomNumbers = new Set()) {
       const previewData = [];
       const systemCarMap = new Map();
       const systemRoomMap = new Map();
-
       Object.values(parkingRecords).forEach(rec => {
         if (rec.car) systemCarMap.set(rec.car, (systemCarMap.get(rec.car)||0)+1);
         if (rec.room) systemRoomMap.set(rec.room, (systemRoomMap.get(rec.room)||0)+1);
       });
-
       validData.forEach(({carNumber, roomNumber}) => {
         const slot = Object.keys(parkingRecords).find(s => parkingRecords[s].car === carNumber);
         const sysRoom = slot ? parkingRecords[slot].room : undefined;
@@ -620,7 +601,6 @@
           });
         }
       });
-
       for (const [car, count] of systemCarMap) {
         if (count > 1) errors.push(`[시스템 정보] 차량번호:${car}가 중복됩니다.`);
       }
@@ -635,10 +615,8 @@
           errors.push(`[시스템 정보] 입실 호수 ${rec.room}호 차량은 주차 미등록 차량입니다.(외부 차량일 수 있습니다.)`);
         }
       });
-
       return { previewData, errors };
     }
-
     function classifyError(msg) {
       if (
         msg.includes('형식이 올바르지 않습니다') ||
@@ -659,7 +637,6 @@
       if (msg.includes('미등록')) return '미등록';
       return '기타';
     }
-
     function groupErrorsByCategory(errors) {
       const categoryMap = {};
       errors.forEach(msg => {
@@ -669,73 +646,63 @@
       });
       return categoryMap;
     }
-
-    // 중복 메시지 필터 + 도보/밖에주차 중복 자체 제거
     function filterDuplicateErrors(errors) {
       return Array.from(new Set(errors)).filter(msg =>
         !msg.includes("차량번호:도보가 중복됩니다.") &&
         !msg.includes("차량번호:밖에주차가 중복됩니다.")
       );
     }
-
     function showModal(slot) {
       modalOpen = true;
       currentSlot = slot;
       const modal = document.getElementById("modal");
       modal.style.display = "block";
-
       const roomInput = document.getElementById("room");
       const carInput = document.getElementById("car");
       roomInput.value = parkingRecords[slot]?.room || "";
       carInput.value = parkingRecords[slot]?.car || "";
-
       document.getElementById("submitBtn").onclick = () => {
         saveHistory();
         const room = roomInput.value;
         const car = carInput.value;
         parkingRecords[slot] = { room, car };
+        saveParkingRecords();
         const spotElement = document.getElementById(`spot-${slot}`);
         spotElement.classList.add("occupied");
         spotElement.innerText = `${room || "-"}\n${car || "-"}`;
         updateStatus();
-        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
         modal.style.display = "none";
         modalOpen = false;
       };
-
       document.getElementById("removeBtn").onclick = () => {
         saveHistory();
         delete parkingRecords[slot];
+        saveParkingRecords();
         const spotElement = document.getElementById(`spot-${slot}`);
         spotElement.classList.remove("occupied");
         spotElement.innerText = "";
         updateStatus();
-        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
         modal.style.display = "none";
         modalOpen = false;
       };
-
       document.getElementById("cancelBtn").onclick = () => {
         modal.style.display = "none";
         modalOpen = false;
       };
     }
-
     function toggleEditMode() {
       isEditMode = !isEditMode;
       document.getElementById("resetToDefaultBtn").style.display = isEditMode ? "inline-block" : "none";
       document.getElementById("parkingLot").classList.toggle("edit-mode", isEditMode);
     }
-
     function resetToDefaultSpots() {
       saveHistory();
       activeSpots = [...DEFAULT_ACTIVE_SPOTS];
       parkingRecords = {};
-      localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
-      localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+      saveActiveSpots();
+      saveParkingRecords();
       createParkingLot();
     }
-
     function toggleParking(slot) {
       if (modalOpen) return;
       if (isEditMode) {
@@ -747,8 +714,8 @@
           activeSpots.splice(index, 1);
           delete parkingRecords[slot];
         }
-        localStorage.setItem("activeSpots", JSON.stringify(activeSpots));
-        localStorage.setItem("parkingRecords", JSON.stringify(parkingRecords));
+        saveActiveSpots();
+        saveParkingRecords();
         createParkingLot();
       } else {
         if (activeSpots.includes(slot)) {
@@ -756,7 +723,6 @@
         }
       }
     }
-
     async function handlePaste() {
       try {
         const text = await navigator.clipboard.readText();
@@ -771,25 +737,20 @@
         console.error('클립보드 에러:', err);
       }
     }
-
     function showPreviewModal(errors, previewData) {
       const modal = document.getElementById('previewModal');
       const tableBody = document.getElementById('previewTableBody');
       const totalCount = updateDataArr.length;
       const matchCount = previewData.length;
-
       document.getElementById('totalCount').textContent = totalCount;
       document.getElementById('matchCount').textContent = matchCount;
-
       const existingErrorList = document.querySelector('.error-list');
       if (existingErrorList) {
         existingErrorList.remove();
       }
-
       if (errors.length > 0) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-list';
-
         const grouped = groupErrorsByCategory(errors);
         Object.entries(grouped).forEach(([cat, msgs]) => {
           const details = document.createElement('details');
@@ -809,7 +770,6 @@
           document.getElementById('previewContent').firstChild
         );
       }
-
       tableBody.innerHTML = previewData.map(item => `
         <tr>
           <td>${item.slot}</td>
@@ -819,44 +779,32 @@
           <td>${item.status}</td>
         </tr>
       `).join('');
-
       modal.style.display = 'block';
     }
-
     function applyUpdate() {
       saveHistory();
       let updateCount = 0;
-
       previewData.forEach(item => {
         parkingRecords[item.slot] = {
           car: item.currentCar,
           room: item.newRoom
         };
-
-        const spotElement = document.getElementById(`spot-${item.slot}`);
-        if (spotElement) {
-          spotElement.innerText = `${item.newRoom}\n${item.currentCar}`;
-        }
         updateCount++;
       });
-
-      localStorage.setItem('parkingRecords', JSON.stringify(parkingRecords));
+      saveParkingRecords();
       updateStatus();
       document.getElementById('previewModal').style.display = 'none';
       alert(`총 ${updateCount}개의 주차 정보가 업데이트되었습니다.`);
     }
-
     function createParkingLot() {
       const lot = document.getElementById("parkingLot");
+      if (!lot) return;
       lot.innerHTML = "";
-
       const linesBottom = [60, 70, 69, 81, 61, 73, 85, 97, 52];
       const linesTop = [66, 76, 75, 87, 67, 79, 91, 103, 58];
-
       for (let i = 1; i <= TOTAL_SPOTS; i++) {
         const spot = document.createElement("div");
         spot.classList.add("spot");
-
         if (!activeSpots.includes(i)) {
           spot.classList.add("empty");
         } else {
@@ -867,23 +815,20 @@
             spot.innerText = `${parkingRecords[i].room || "-"}\n${parkingRecords[i].car || "-"}`;
           }
         }
-
         if (linesBottom.includes(i)) spot.classList.add("border-bottom");
         if (linesTop.includes(i)) spot.classList.add("border-top");
-
         spot.onclick = () => toggleParking(i);
         lot.appendChild(spot);
       }
       updateStatus();
     }
-
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('editModeBtn').onclick = toggleEditMode;
       document.getElementById('resetToDefaultBtn').onclick = resetToDefaultSpots;
       document.getElementById('clearAllBtn').onclick = () => {
         saveHistory();
         parkingRecords = {};
-        localStorage.setItem('parkingRecords', JSON.stringify(parkingRecords));
+        saveParkingRecords();
         createParkingLot();
       };
       document.getElementById('pasteIcon').onclick = handlePaste;
@@ -891,11 +836,9 @@
       document.getElementById('cancelUpdateBtn').onclick = () => {
         document.getElementById('previewModal').style.display = 'none';
       };
-
       document.getElementById('undoBtn').onclick = undo;
       document.getElementById('redoBtn').onclick = redo;
-
-      createParkingLot();
+      loadFirebaseData();
     });
   </script>
 </body>
