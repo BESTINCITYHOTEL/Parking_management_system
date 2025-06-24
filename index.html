@@ -307,8 +307,11 @@
     let allErrors = [];
     let historyStack = [];
     let redoStack = [];
-    let firebaseReady = false;
-
+    let firebaseReady = false
+    
+    const undoRef = db.ref('undoStack');
+    const redoRef = db.ref('redoStack');
+    
     function loadFirebaseData() {
       db.ref('activeSpots').once('value').then(snapshot => {
         activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
@@ -339,39 +342,57 @@
     }
 
     function saveHistory() {
-      historyStack.push({
+      const snapshot = {
         parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
-        activeSpots: JSON.parse(JSON.stringify(activeSpots))
-      });
-      redoStack = [];
+        activeSpots: JSON.parse(JSON.stringify(activeSpots)),
+        timestamp: Date.now()
+      };
+      undoRef.push(snapshot); // Firebase에 저장
+      redoRef.set(null);      // redo 스택 초기화
     }
+    
     function undo() {
-      if (historyStack.length > 0) {
-        redoStack.push({
-          parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
-          activeSpots: JSON.parse(JSON.stringify(activeSpots))
-        });
-        const prev = historyStack.pop();
-        parkingRecords = prev.parkingRecords;
-        activeSpots = prev.activeSpots;
-        saveParkingRecords();
-        saveActiveSpots();
-        createParkingLot();
-      }
+      if (historyStack.length === 0) return;
+      
+      const last = historyStack[historyStack.length - 1];
+      
+      const current = {
+        parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
+        activeSpots: JSON.parse(JSON.stringify(activeSpots)),
+        timestamp: Date.now
+      };
+      redoRef.push(current);
+      
+      undoRef.child(last.key).remove();
+      
+      parkingRecords = last.parkingRecords;
+      activeSpots = last.activeSpots;
+      saveParkingRecords();
+      saveActiveSpots();
+      createParkingLot();
     }
+    
     function redo() {
-      if (redoStack.length > 0) {
-        historyStack.push({
-          parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
-          activeSpots: JSON.parse(JSON.stringify(activeSpots))
-        });
-        const next = redoStack.pop();
-        parkingRecords = next.parkingRecords;
-        activeSpots = next.activeSpots;
-        saveParkingRecords();
-        saveActiveSpots();
-        createParkingLot();
-      }
+      if (redoStack.length === 0) return;
+
+      const last = redoStack[redoStack.length - 1];
+      
+      const current = {
+        parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
+        activeSpots: JSON.parse(JSON.stringify(activeSpots)),
+        timestamp: Date.now()
+      };
+      undoRef.push(current);
+      
+      redoRef.child(last.key).remove();
+      
+      parkingRecords = last.parkingRecords;
+      activeSpots = last.activeSpots;
+      saveParkingRecords();
+      saveActiveSpots();
+      createParkingLot();
+    }
+    
     }
     function updateStatus() {
       const occupiedCount = Object.keys(parkingRecords).length;
@@ -831,6 +852,16 @@
       document.getElementById('undoBtn').onclick = undo;
       document.getElementById('redoBtn').onclick = redo;
       loadFirebaseData();
+      
+      undoRef.on('value', snapshot => {
+        const val = snapshot.val();
+        historyStack = val ? Object.entries(val).map(([key, value]) => ({ key, ...value })) : [];
+      });
+
+      redoRef.on('value', snapshot => {
+        const val = snapshot.val();
+        redoStack = val ? Object.entries(val).map(([key, value]) => ({ key, ...value })) : [];
+      });
     });
   </script>
 </body>
