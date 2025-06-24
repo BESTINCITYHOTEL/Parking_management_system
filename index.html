@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>주차 관리 시스템</title>
   <style>
     body {
@@ -10,6 +10,7 @@
       text-align: center;
       margin: 0;
       padding: 0;
+      overflow-x: hidden;
       overscroll-behavior: contain;
       touch-action: manipulation;
       font-size: 18px;
@@ -29,8 +30,8 @@
     }
     .parking-container {
       position: relative;
-      width: 100vw;
       max-width: 100%;
+      overflow: hidden;
       height: 100vh;
       max-height: 100%;
       box-sizing: border-box;
@@ -43,6 +44,8 @@
       background-size: cover;
     }
     .spot {
+      overflow: hidden;
+      text-overflow: ellipsis;
       width: 100%;
       height: 100%;
       aspect-ratio: 2 / 1;
@@ -60,7 +63,8 @@
       padding: 5px;
       text-shadow: 1px 1px 3px black;
       box-sizing: border-box;
-      white-space: nowrap;
+      white-space: normal;
+      word-break: break-word;
       position: relative;
     }
     .occupied {
