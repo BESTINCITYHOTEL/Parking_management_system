@@ -7,218 +7,153 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 10px;
+    }
+    h2 {
       text-align: center;
-      margin: 0;
-      padding: 0;
     }
     .top-buttons {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
       margin-bottom: 10px;
+      text-align: center;
     }
     .top-buttons button {
-      font-size: 22px;
-      background: none;
-      border: none;
+      margin: 0 5px;
+      font-size: 20px;
       cursor: pointer;
+    }
+    #status {
+      margin-bottom: 10px;
+      text-align: center;
+      font-weight: bold;
     }
     .parking-container {
-      position: relative;
-      width: 100%;
-      max-width: 900px;
-      height: 600px;
-      margin: auto;
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      grid-template-rows: repeat(18, 1fr);
+      grid-template-columns: repeat(12, 50px);
       gap: 5px;
-      background: url('도면이미지.png') no-repeat center center;
-      background-size: cover;
+      justify-content: center;
+      user-select: none;
     }
     .spot {
-      width: 100%;
-      height: 100%;
-      aspect-ratio: 2 / 1;
-      background-color: green;
-      color: white;
-      text-align: center;
+      width: 50px;
+      height: 50px;
+      border: 1px solid #333;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      font-size: 12px;
-      font-weight: bold;
-      border-radius: 10px;
+      font-size: 11px;
       cursor: pointer;
-      line-height: 1.2;
-      padding: 5px;
-      text-shadow: 1px 1px 3px black;
-      box-sizing: border-box;
-      white-space: nowrap;
-      position: relative;
+      white-space: pre-line;
+      background-color: #e0e0e0;
+      border-radius: 4px;
     }
-    .occupied {
-      background-color: red;
+    .spot.occupied {
+      background-color: #9acd32;
+      color: #000;
+      font-weight: bold;
     }
-    .empty {
-      background: none;
-      pointer-events: none;
-      border: 1px solid transparent;
+    .spot.empty {
+      background-color: #f8f8f8;
+      border-color: #ccc;
+      cursor: default;
     }
-    .edit-mode .empty {
-      background-color: #444;
-      pointer-events: auto;
+    .spot.active:hover {
+      background-color: #7fbf7f;
     }
-    .edit-mode .empty::before {
-      content: '+';
-      color: white;
-      font-size: 20px;
+    .spot.border-bottom {
+      border-bottom: 3px solid #333;
     }
-    .edit-mode .spot.active:not(.occupied)::after {
-      content: '-';
-      position: absolute;
-      top: 3px;
-      right: 6px;
-      font-size: 16px;
-      color: white;
+    .spot.border-top {
+      border-top: 3px solid #333;
     }
-    .border-top {
-      border-top: 3px solid black;
+    .edit-mode .spot {
+      cursor: pointer;
     }
-    .border-bottom {
-      border-bottom: 3px solid black;
-    }
-    .modal {
+    .modal, .preview-modal {
       display: none;
       position: fixed;
-      top: 50%;
+      top: 10%;
       left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: rgba(0, 0, 0, 0.85);
-      color: white;
-      padding: 30px;
-      border-radius: 10px;
+      transform: translateX(-50%);
+      background: #fff;
+      border: 2px solid #333;
+      border-radius: 6px;
+      padding: 15px;
       z-index: 1000;
-      width: 90%;
-      max-width: 450px;
-      box-sizing: border-box;
+      width: 350px;
+      max-width: 90%;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .modal h3, .preview-modal h3 {
+      margin-top: 0;
+      text-align: center;
     }
     .modal input {
-      width: 100%;
-      padding: 15px;
-      margin: 5px 0;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      box-sizing: border-box;
+      width: calc(50% - 12px);
+      margin: 5px 5px 15px 5px;
+      padding: 6px;
+      font-size: 14px;
     }
     .modal-buttons {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
-      margin-top: 10px;
     }
     .modal-buttons button {
       flex: 1;
-      padding: 12px;
-      font-size: 16px;
+      margin: 0 5px;
+      padding: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 4px;
       border: none;
-      border-radius: 5px;
-      color: white;
-      box-sizing: border-box;
     }
-    .modal-buttons .remove {
-      background-color: orange;
+    .modal-buttons button.remove {
+      background-color: #f44336;
+      color: #fff;
     }
-    .modal-buttons .cancel {
-      background-color: red;
+    .modal-buttons button.cancel {
+      background-color: #9e9e9e;
+      color: #fff;
     }
-    .modal-buttons #submitBtn {
-      background-color: green;
+    .modal-buttons button:not(.remove):not(.cancel) {
+      background-color: #4caf50;
+      color: #fff;
     }
-    .preview-modal {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: rgba(0, 0, 0, 0.85);
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
-      z-index: 1000;
-      width: 90%;
-      max-width: 600px;
-      max-height: 80vh;
-      overflow-y: auto;
+    .preview-summary {
+      margin-bottom: 10px;
+      text-align: center;
+      font-weight: bold;
     }
     .preview-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 10px 0;
+      font-size: 13px;
+      margin-bottom: 10px;
     }
     .preview-table th, .preview-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
+      border: 1px solid #ccc;
+      padding: 6px;
       text-align: center;
     }
-    .preview-table th {
-      background-color: #444;
-    }
-    .preview-table tr:nth-child(even) {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-    .preview-summary {
-      margin: 10px 0;
-      padding: 10px;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 5px;
-    }
     .error-list {
-      background-color: rgba(255, 0, 0, 0.1);
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      max-height: 200px;
+      margin-bottom: 10px;
+      max-height: 150px;
       overflow-y: auto;
+      border: 1px solid #f44336;
+      background-color: #ffe6e6;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #a94442;
     }
     .error-list details summary {
       cursor: pointer;
       font-weight: bold;
-      margin-bottom: 4px;
-    }
-    .error-list details[open] summary {
-      color: #e63737;
-    }
-    .error-list details {
-      margin-bottom: 4px;
-    }
-    @media (max-width: 600px) {
-      .parking-container {
-        height: 400px;
-      }
-      .spot {
-        font-size: 10px;
-        padding: 3px;
-      }
-      .modal {
-        width: 95%;
-        padding: 20px;
-      }
-      .modal input {
-        padding: 12px;
-        font-size: 14px;
-      }
-      .modal-buttons button {
-        padding: 10px;
-        font-size: 14px;
-      }
     }
   </style>
-  <!-- Firebase App (core) -->
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-  <!-- Firebase Database -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
 </head>
 <body>
@@ -233,6 +168,7 @@
   </div>
   <p id="status">현재 주차된 차량: 0대 / 남은 자리: 39대</p>
   <div class="parking-container" id="parkingLot"></div>
+
   <div id="modal" class="modal">
     <h3>주차 정보 수정</h3>
     <input type="text" id="room" placeholder="입실 호수" inputmode="numeric" />
@@ -243,6 +179,7 @@
       <button class="cancel" id="cancelBtn">취소</button>
     </div>
   </div>
+
   <div id="previewModal" class="preview-modal">
     <h3>데이터 업데이트 미리보기</h3>
     <div class="preview-summary">
@@ -259,8 +196,7 @@
             <th>상태</th>
           </tr>
         </thead>
-        <tbody id="previewTableBody">
-        </tbody>
+        <tbody id="previewTableBody"></tbody>
       </table>
     </div>
     <div class="modal-buttons">
@@ -268,6 +204,7 @@
       <button id="cancelUpdateBtn" class="cancel">취소</button>
     </div>
   </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCU6-7mf38_E026iIYgJtlAbnNaSVe7rmM",
@@ -305,13 +242,29 @@
     let updateDataArr = [];
     let previewData = [];
     let allErrors = [];
-    let historyStack = [];
-    let redoStack = [];
-    let firebaseReady = false
-    
+
     const undoRef = db.ref('undoStack');
     const redoRef = db.ref('redoStack');
-    
+
+    let historyStack = [];
+    let redoStack = [];
+
+    let firebaseReady = false;
+
+    undoRef.on('value', snapshot => {
+      const val = snapshot.val();
+      historyStack = val
+        ? Object.entries(val).map(([key, value]) => ({ key, ...value }))
+        : [];
+    });
+
+    redoRef.on('value', snapshot => {
+      const val = snapshot.val();
+      redoStack = val
+        ? Object.entries(val).map(([key, value]) => ({ key, ...value }))
+        : [];
+    });
+
     function loadFirebaseData() {
       db.ref('activeSpots').once('value').then(snapshot => {
         activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
@@ -329,6 +282,7 @@
       activeSpots = snapshot.val() || [...DEFAULT_ACTIVE_SPOTS];
       createParkingLot();
     });
+
     db.ref('parkingRecords').on('value', snapshot => {
       parkingRecords = snapshot.val() || {};
       createParkingLot();
@@ -347,53 +301,54 @@
         activeSpots: JSON.parse(JSON.stringify(activeSpots)),
         timestamp: Date.now()
       };
-      undoRef.push(snapshot); // Firebase에 저장
-      redoRef.set(null);      // redo 스택 초기화
+      undoRef.push(snapshot);
+      redoRef.set(null);
     }
-    
+
     function undo() {
       if (historyStack.length === 0) return;
-      
+
       const last = historyStack[historyStack.length - 1];
-      
+
       const current = {
         parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
         activeSpots: JSON.parse(JSON.stringify(activeSpots)),
-        timestamp: Date.now
+        timestamp: Date.now()
       };
       redoRef.push(current);
-      
+
       undoRef.child(last.key).remove();
-      
+
       parkingRecords = last.parkingRecords;
       activeSpots = last.activeSpots;
+
       saveParkingRecords();
       saveActiveSpots();
       createParkingLot();
     }
-    
+
     function redo() {
       if (redoStack.length === 0) return;
 
       const last = redoStack[redoStack.length - 1];
-      
+
       const current = {
         parkingRecords: JSON.parse(JSON.stringify(parkingRecords)),
         activeSpots: JSON.parse(JSON.stringify(activeSpots)),
         timestamp: Date.now()
       };
       undoRef.push(current);
-      
+
       redoRef.child(last.key).remove();
-      
+
       parkingRecords = last.parkingRecords;
       activeSpots = last.activeSpots;
+
       saveParkingRecords();
       saveActiveSpots();
       createParkingLot();
     }
     
-    }
     function updateStatus() {
       const occupiedCount = Object.keys(parkingRecords).length;
       const availableCount = activeSpots.length - occupiedCount;
@@ -736,132 +691,132 @@
         }
       }
     }
-    async function handlePaste() {
-      try {
-        const text = await navigator.clipboard.readText();
-        const { validData, errors, allPasteCarNumbers, allPasteRoomNumbers } = parseAndValidateData(text);
-        const { previewData: newPreviewData, errors: allErr } = generatePreviewAndErrors(validData, parkingRecords, errors, allPasteCarNumbers, allPasteRoomNumbers);
-        updateDataArr = validData;
-        previewData = newPreviewData;
-        allErrors = filterDuplicateErrors(allErr);
-        showPreviewModal(allErrors, previewData);
-      } catch (err) {
-        alert('클립보드 데이터를 읽을 수 없습니다.');
-        console.error('클립보드 에러:', err);
-      }
-    }
-    function showPreviewModal(errors, previewData) {
-      const modal = document.getElementById('previewModal');
-      const tableBody = document.getElementById('previewTableBody');
-      const totalCount = updateDataArr.length;
-      const matchCount = previewData.length;
-      document.getElementById('totalCount').textContent = totalCount;
-      document.getElementById('matchCount').textContent = matchCount;
-      const existingErrorList = document.querySelector('.error-list');
-      if (existingErrorList) {
-        existingErrorList.remove();
-      }
-      if (errors.length > 0) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-list';
-        const grouped = groupErrorsByCategory(errors);
-        Object.entries(grouped).forEach(([cat, msgs]) => {
-          const details = document.createElement('details');
-          details.open = false;
-          const summary = document.createElement('summary');
-          summary.textContent = `${cat} (${msgs.length})`;
-          details.appendChild(summary);
-          msgs.forEach(m => {
-            const div = document.createElement('div');
-            div.textContent = m;
-            details.appendChild(div);
-          });
-          errorDiv.appendChild(details);
-        });
-        document.getElementById('previewContent').insertBefore(
-          errorDiv,
-          document.getElementById('previewContent').firstChild
-        );
-      }
-      tableBody.innerHTML = previewData.map(item => `
-        <tr>
-          <td>${item.slot}</td>
-          <td>${item.currentCar}</td>
-          <td>${item.currentRoom}</td>
-          <td>${item.newRoom}</td>
-          <td>${item.status}</td>
-        </tr>
-      `).join('');
-      modal.style.display = 'block';
-    }
-    function applyUpdate() {
-      saveHistory();
-      let updateCount = 0;
-      previewData.forEach(item => {
-        parkingRecords[item.slot] = {
-          car: item.currentCar,
-          room: item.newRoom
-        };
-        updateCount++;
-      });
-      saveParkingRecords();
-      updateStatus();
-      document.getElementById('previewModal').style.display = 'none';
-      alert(`총 ${updateCount}개의 주차 정보가 업데이트되었습니다.`);
-    }
     function createParkingLot() {
-      const lot = document.getElementById("parkingLot");
-      if (!lot) return;
-      lot.innerHTML = "";
-      const linesBottom = [60, 70, 69, 81, 61, 73, 85, 97, 52];
-      const linesTop = [66, 76, 75, 87, 67, 79, 91, 103, 58];
+      const container = document.getElementById("parkingLot");
+      container.innerHTML = "";
       for (let i = 1; i <= TOTAL_SPOTS; i++) {
         const spot = document.createElement("div");
         spot.classList.add("spot");
-        if (!activeSpots.includes(i)) {
-          spot.classList.add("empty");
-        } else {
+        spot.id = `spot-${i}`;
+        if (activeSpots.includes(i)) {
           spot.classList.add("active");
-          spot.id = `spot-${i}`;
-          if (parkingRecords[i]) {
+          if (parkingRecords[i] && parkingRecords[i].car) {
             spot.classList.add("occupied");
             spot.innerText = `${parkingRecords[i].room || "-"}\n${parkingRecords[i].car || "-"}`;
           }
+        } else {
+          spot.classList.add("empty");
         }
-        if (linesBottom.includes(i)) spot.classList.add("border-bottom");
-        if (linesTop.includes(i)) spot.classList.add("border-top");
-        spot.onclick = () => toggleParking(i);
-        lot.appendChild(spot);
+        spot.addEventListener("click", () => toggleParking(i));
+        container.appendChild(spot);
       }
       updateStatus();
     }
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('editModeBtn').onclick = toggleEditMode;
-      document.getElementById('resetToDefaultBtn').onclick = resetToDefaultSpots;
-      document.getElementById('clearAllBtn').onclick = () => {
-        saveHistory();
-        parkingRecords = {};
-        saveParkingRecords();
-        createParkingLot();
-      };
-      document.getElementById('pasteIcon').onclick = handlePaste;
-      document.getElementById('applyUpdateBtn').onclick = applyUpdate;
-      document.getElementById('cancelUpdateBtn').onclick = () => {
-        document.getElementById('previewModal').style.display = 'none';
-      };
-      document.getElementById('undoBtn').onclick = undo;
-      document.getElementById('redoBtn').onclick = redo;
-      loadFirebaseData();
-      
-      undoRef.on('value', snapshot => {
-        const val = snapshot.val();
-        historyStack = val ? Object.entries(val).map(([key, value]) => ({ key, ...value })) : [];
+
+    document.getElementById("pasteIcon").addEventListener("click", () => {
+      if (modalOpen) return;
+      navigator.clipboard.readText()
+        .then(text => {
+          if (!text) {
+            alert("클립보드에 붙여넣을 텍스트가 없습니다.");
+            return;
+          }
+          const { validData, errors, allPasteCarNumbers, allPasteRoomNumbers } = parseAndValidateData(text);
+          const { previewData, errors: allErrors } = generatePreviewAndErrors(validData, parkingRecords, errors, allPasteCarNumbers, allPasteRoomNumbers);
+
+          const uniqueErrors = filterDuplicateErrors(allErrors);
+          const groupedErrors = groupErrorsByCategory(uniqueErrors);
+
+          openPreviewModal(previewData, groupedErrors, validData);
+        })
+        .catch(err => {
+          alert("클립보드 읽기 실패: " + err);
+        });
+    });
+
+    function openPreviewModal(previewData, groupedErrors, validData) {
+      const modal = document.getElementById("previewModal");
+      modal.style.display = "block";
+
+      document.getElementById("totalCount").innerText = validData.length;
+      document.getElementById("matchCount").innerText = previewData.length;
+
+      const tbody = document.getElementById("previewTableBody");
+      tbody.innerHTML = "";
+      previewData.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.slot}</td>
+          <td>${item.currentCar || "-"}</td>
+          <td>${item.currentRoom || "-"}</td>
+          <td>${item.newRoom || "-"}</td>
+          <td>${item.status}</td>
+        `;
+        tbody.appendChild(tr);
       });
 
-      redoRef.on('value', snapshot => {
-        const val = snapshot.val();
-        redoStack = val ? Object.entries(val).map(([key, value]) => ({ key, ...value })) : [];
+      const previewContent = document.getElementById("previewContent");
+      const errorDiv = document.createElement("div");
+      errorDiv.classList.add("error-list");
+      errorDiv.innerHTML = "";
+
+      Object.entries(groupedErrors).forEach(([category, errors]) => {
+        const details = document.createElement("details");
+        details.open = true;
+        const summary = document.createElement("summary");
+        summary.innerText = `${category} (${errors.length})`;
+        details.appendChild(summary);
+        errors.forEach(msg => {
+          const p = document.createElement("p");
+          p.innerText = msg;
+          details.appendChild(p);
+        });
+        errorDiv.appendChild(details);
       });
+
+      previewContent.appendChild(errorDiv);
+
+      document.getElementById("applyUpdateBtn").onclick = () => {
+        saveHistory();
+        previewData.forEach(({ slot, newRoom, currentCar }) => {
+          if (slot && newRoom && currentCar) {
+            parkingRecords[slot] = { room: newRoom, car: currentCar };
+          }
+        });
+        saveParkingRecords();
+        createParkingLot();
+        modal.style.display = "none";
+      };
+      document.getElementById("cancelUpdateBtn").onclick = () => {
+        modal.style.display = "none";
+      };
+    }
+
+    document.getElementById("undoBtn").addEventListener("click", undo);
+    document.getElementById("redoBtn").addEventListener("click", redo);
+    document.getElementById("clearAllBtn").addEventListener("click", () => {
+      if (confirm("전체 데이터를 초기화하시겠습니까?")) {
+        saveHistory();
+        parkingRecords = {};
+        activeSpots = [];
+        saveParkingRecords();
+        saveActiveSpots();
+        createParkingLot();
+      }
+    });
+    document.getElementById("editModeBtn").addEventListener("click", toggleEditMode);
+    document.getElementById("resetToDefaultBtn").addEventListener("click", resetToDefaultSpots);
+
+    loadFirebaseData();
+
+    window.addEventListener("click", e => {
+      if (modalOpen && e.target.classList.contains("modal")) {
+        document.getElementById("modal").style.display = "none";
+        modalOpen = false;
+      }
+      if (document.getElementById("previewModal").style.display === "block" && e.target.classList.contains("preview-modal")) {
+        document.getElementById("previewModal").style.display = "none";
+      }
     });
   </script>
 </body>
