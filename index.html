@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>주차 관리 시스템</title>
   <style>
     body {
@@ -10,6 +10,8 @@
       text-align: center;
       margin: 0;
       padding: 0;
+      overscroll-behavior: contain;
+      touch-action: manipulation;
       font-size: 18px;
     }
     .top-buttons {
@@ -27,9 +29,11 @@
     }
     .parking-container {
       position: relative;
-      width: 100%;
-      max-width: 900px;
-      height: 80vh;
+      width: 100vw;
+      max-width: 100%;
+      height: 100vh;
+      max-height: 100%;
+      box-sizing: border-box;
       margin: auto;
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -860,5 +864,23 @@
       });
     });
   </script>
+<script>
+  function adjustViewport() {
+    const meta = document.querySelector("meta[name=viewport]");
+    if (!meta) return;
+
+    meta.setAttribute("content", "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no");
+    
+    document.body.style.zoom = "reset";
+  }
+
+  window.addEventListener("orientationchange", () => {
+    setTimeout(adjustViewport, 300);
+  });
+
+  window.addEventListener("resize", () => {
+    setTimeout(adjustViewport, 300);
+  });
+</script>
 </body>
 </html>
