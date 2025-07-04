@@ -405,7 +405,15 @@
     }
     function parseLine13(line) {
       let parts = line.split('\t');
+      if (parts.length === 1) {
+        parts = line.split(/ {2,}/);
+      }
+      if (parts.length === 12) {
+        parts.unshift("");
+      }
+      return parts;
     }
+
     function parseAndValidateData(text) {
       const allPasteCarNumbers = new Set();
       const allPasteRoomNumbers = new Set();
@@ -417,15 +425,10 @@
       const parsedLines = [];
       lines.forEach((line, idx) => {
         const parts = parseLine13(line);
-        const carDataList = [];
-        const carNumbers = [];
-        parts.forEach(part => {
-          const cleanPart = part.trim().replace(/\s+/g, '');
-          const match = cleanPart.match(/차량:?\d{4}/);
-          if (match) {
-            carDataList.push(match[0]);
-            carNumbers.push(match[0].replace(/차량:?/, ''));
-          }
+        const carDataList = parts.filter(part => part.startsWith('차량:'));
+        const carNumbers = carDataList.map(c => c.replace('차량:', ''));
+        carNumbers.forEach(num => {
+          if (num) allPasteCarNumbers.add(num);
         });
         const roomNumber = parts[0] ? parts[0].trim() : "";
         if (roomNumber) allPasteRoomNumbers.add(roomNumber);
@@ -446,7 +449,7 @@
         const hasCar = carDataList.length > 0;
         const isCarDobo = carData === '차량:도보';
         const isCarBake = carData === '차량:밖에주차';
-        const lineNo = item.idx + 1 + 5;
+        const lineNo = item.idx + 1;
         if (roomNumber && !isValidRoomNumber(roomNumber)) {
           errors.push(`[${lineNo}행] [입력된 정보] 입실 호수 ${roomNumber}호는 유효하지 않는 호수입니다.`);
           hasError = true;
